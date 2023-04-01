@@ -7,7 +7,7 @@ namespace UD_SimpleBot.Commands
     [Category("UD_SimpleBot")]
     public class UD_SimpleBotCommands : CommandModule
     {
-
+        /*
         public SimpleBot Plugin => (SimpleBot)Context.Plugin;
 
         [Command("test", "This is a Test Command.")]
@@ -23,5 +23,6 @@ namespace UD_SimpleBot.Commands
         {
             Context.Respond("This is a Test " + foo + ", " + bar);
         }
+        */
     }
 }
