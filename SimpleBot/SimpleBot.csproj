@@ -6,8 +6,8 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{3A801447-AA0B-4C3E-9C6B-AE91741860A5}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <RootNamespace>UD_SimpleBot</RootNamespace>
-    <AssemblyName>UD SimpleBot</AssemblyName>
+    <RootNamespace>SimpleBot</RootNamespace>
+    <AssemblyName>SimpleBot</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{60dc8134-eba5-43b8-bcc9-bb4bc16c2548};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
@@ -15,35 +15,15 @@
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Deterministic>true</Deterministic>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-  </PropertyGroup>
-  <PropertyGroup>
-    <StartupObject />
-  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
     <PlatformTarget>x64</PlatformTarget>
     <OutputPath>bin\x64\Debug\</OutputPath>
+    <DebugType>full</DebugType>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
     <PlatformTarget>x64</PlatformTarget>
     <OutputPath>bin\x64\Release\</OutputPath>
+    <Optimize>true</Optimize>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Discord.Net.Commands, Version=3.10.0.0, Culture=neutral, processorArchitecture=MSIL">
@@ -216,40 +196,45 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="UD SimpleBot\Discord\BOT.cs" />
-    <Compile Include="UD SimpleBot\Settings\Objects.cs" />
-    <Compile Include="UD SimpleBot\UI\UD_SimpleBotControl.xaml.cs">
-      <DependentUpon>UD_SimpleBotControl.xaml</DependentUpon>
+    <Compile Include="SimpleBot\Discord\BOT.cs" />
+    <Compile Include="SimpleBot\Discord\BOT_SlashCommands\CommandRan.cs" />
+    <Compile Include="SimpleBot\Discord\BOT_SlashCommands\UserCommands.cs" />
+    <Compile Include="SimpleBot\Discord\Rewards\BoostRewards.cs" />
+    <Compile Include="SimpleBot\Settings\Objects.cs" />
+    <Compile Include="SimpleBot\UI\SimpleBotControl.xaml.cs">
+      <DependentUpon>SimpleBotControl.xaml</DependentUpon>
     </Compile>
-    <Compile Include="UD SimpleBot\Properties\AssemblyInfo.cs">
+    <Compile Include="SimpleBot\Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="UD SimpleBot\Properties\Resources.Designer.cs">
+    <Compile Include="SimpleBot\Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
-    <Compile Include="UD SimpleBot\Properties\Settings.Designer.cs">
+    <Compile Include="SimpleBot\Properties\Settings.Designer.cs">
       <AutoGen>True</AutoGen>
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
-    <Compile Include="UD SimpleBot\Commands\UD_SimpleBotCommands.cs" />
-    <Compile Include="UD SimpleBot\Settings\UD_SimpleBotConfig.cs" />
-    <Compile Include="UD SimpleBot\UD_SimpleBot.cs" />
-    <EmbeddedResource Include="UD SimpleBot\Properties\Resources.resx">
+    <Compile Include="SimpleBot\InGameCommands\UserCommands.cs" />
+    <Compile Include="SimpleBot\Settings\SimpleBotConfig.cs" />
+    <Compile Include="SimpleBot\SimpleBot.cs" />
+    <Compile Include="SimpleBot\Utils\CommandManager.cs" />
+    <Compile Include="SimpleBot\Utils\Helpers.cs" />
+    <EmbeddedResource Include="SimpleBot\Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
     <None Include="app.config" />
     <None Include="packages.config" />
-    <None Include="UD SimpleBot\Properties\Settings.settings">
+    <None Include="SimpleBot\Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Page Include="UD SimpleBot\UI\UD_SimpleBotControl.xaml">
+    <Page Include="SimpleBot\UI\SimpleBotControl.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
