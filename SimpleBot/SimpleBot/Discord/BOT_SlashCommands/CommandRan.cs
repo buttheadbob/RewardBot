@@ -32,8 +32,27 @@ namespace SimpleBot.DiscordBot.BOT_SlashCommands
         
         private static async Task RewardsLink(SocketSlashCommand command)
         {
-            Random generator = new Random(Guid.NewGuid().GetHashCode()); // Yeah.. this amuses me too :)
-            string code = generator.Next(100000,999999).ToString("D6");
+            bool repeatCode = false;
+            bool endLoop = false;
+            string code = string.Empty;
+            
+            while (!endLoop)
+            {
+                Random generator = new Random(Guid.NewGuid().GetHashCode()); // Yeah.. this amuses me too :)
+                code = generator.Next(100000,999999).ToString("D6");
+            
+                // Doubtful but check if code already used.
+                for (int index = Instance.Config.LinkRequests.Count - 1; index >= 0; index--)
+                {
+                    LinkRequest linkRequest = Instance.Config.LinkRequests[index];
+                    if (linkRequest.Code == code)
+                        repeatCode = true;
+                }
+
+                if (!repeatCode)
+                    endLoop = true;
+            }
+            
 
             for (int index = Instance.Config.LinkRequests.Count - 1; index >= 0; index--)
             {
@@ -69,7 +88,7 @@ namespace SimpleBot.DiscordBot.BOT_SlashCommands
                 }
             }
 
-            await command.RespondAsync("Unable to locate any information linked to your Discord account.");
+            await command.RespondAsync("Unable to locate any information linked to your Discord account.", ephemeral: true);
         }
 
         private static async Task RewardsAvailable(SocketSlashCommand command)
@@ -82,7 +101,7 @@ namespace SimpleBot.DiscordBot.BOT_SlashCommands
                     payouts++;
             }
 
-            await command.RespondAsync($"You have {payouts} rewards waiting to be claimed in-game.");
+            await command.RespondAsync($"You have {payouts} rewards waiting to be claimed in-game.", ephemeral: true);
         }
     }
     

@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 
 namespace SimpleBot.Settings
 {
-    public enum BotStatus { Online, Offline }
+    public enum BotStatusEnum { Online, Offline, Connecting, Disconnecting }
 
     public sealed class RegisteredUsers
     {
@@ -40,9 +42,13 @@ namespace SimpleBot.Settings
     {
         public ulong SteamID { get; set; }
         public string IngameName { get; set; }
+        public string DiscordName { get; set; }
         public List<string> Commands { get; set; }
         public DateTime PaymentDate { get; set; }
         public DateTime ExpiryDate { get; set; }
         public ulong DiscordId { get; set; }
+        public string DaysUntilExpired => (ExpiryDate - PaymentDate).Days.ToString();
+        public string CommandCount => Commands.Count.ToString();
     }
+
 }

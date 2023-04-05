@@ -199,7 +199,7 @@
     <Compile Include="SimpleBot\Discord\BOT.cs" />
     <Compile Include="SimpleBot\Discord\BOT_SlashCommands\CommandRan.cs" />
     <Compile Include="SimpleBot\Discord\BOT_SlashCommands\UserCommands.cs" />
-    <Compile Include="SimpleBot\Discord\Rewards\BoostRewards.cs" />
+    <Compile Include="SimpleBot\Discord\Utils\SendDM.cs" />
     <Compile Include="SimpleBot\Settings\Objects.cs" />
     <Compile Include="SimpleBot\UI\SimpleBotControl.xaml.cs">
       <DependentUpon>SimpleBotControl.xaml</DependentUpon>

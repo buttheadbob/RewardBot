@@ -4,7 +4,7 @@ using Discord.WebSocket;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using SimpleBot.DiscordBot.BOT_SlashCommands;
-using SimpleBot.DiscordBot.Rewards;
+using SimpleBot.DiscordBot.Utils;
 using SimpleBot.Settings;
 using static SimpleBot.MainBot;
 
@@ -15,7 +15,7 @@ namespace SimpleBot.DiscordBot
         private static readonly List<SocketGuildUser> Users = new List<SocketGuildUser>();
         public DiscordSocketClient Client;
         public List<SocketGuild> Guilds = new List<SocketGuild>();
-        public readonly RewardBoosters BoostReward = new RewardBoosters();
+        public UserUtils UserUtils = new UserUtils();
 
         public Bot()
         {
@@ -33,26 +33,24 @@ namespace SimpleBot.DiscordBot
             Client.Connected += _client_Connected; 
             Client.Disconnected += ClientOnDisconnected;
             Client.Ready += ClientOnReady;
+            Client.UserBanned += ClientOnUserBanned;
 
             await Task.Delay(-1);
         }
 
         private async Task ClientOnDisconnected(Exception arg)
         {
-            await Client.LogoutAsync();
+            Instance.Config.SetBotStatus(BotStatusEnum.Disconnecting);
             await Client.StopAsync();
-            await Client.DisposeAsync();
-            Instance.Config.BotStatus = BotStatus.Offline;
-
-            Log.Info($"{Instance.Config.BotName} disconnected.");
+            await Client.LogoutAsync();
+            Instance.Config.SetBotStatus(BotStatusEnum.Offline);
         }
 
         public async Task Connect()
         {
-            string token = Instance.Config.BotKey;
-            await Client.LoginAsync(TokenType.Bot, token);
+            await Client.LoginAsync(TokenType.Bot, Instance.Config.BotKey);
             await Client.StartAsync();
-            Instance.Config.BotStatus = BotStatus.Online;
+            Instance.Config.SetBotStatus(BotStatusEnum.Connecting);
         }
 
         public async Task Disconnect()
@@ -63,7 +61,7 @@ namespace SimpleBot.DiscordBot
         private Task _client_Connected()
         {
             Guilds = new List<SocketGuild>(Client.Guilds); // Get list of all servers the bot is on.  This should only contain 1.
-            Instance.Config.BotStatus = BotStatus.Online;
+            Instance.Config.SetBotStatus(BotStatusEnum.Online);
             
             return Task.CompletedTask;
         }
@@ -80,6 +78,7 @@ namespace SimpleBot.DiscordBot
             Client.UserBanned += ClientOnUserBanned;
             Client.SlashCommandExecuted += CommandRan.ClientOnSlashCommandExecuted;
             UserCommands userCommands = await UserCommands.CreateAsync();
+            Instance.Config.SetBotStatus(BotStatusEnum.Online);
         }
 
         private Task ClientOnUserBanned(SocketUser bannedUser, SocketGuild server)
@@ -161,6 +160,18 @@ namespace SimpleBot.DiscordBot
 
         private static Task Logging(LogMessage msg)
         {
+            if (msg.ToString().Contains("Discord.Net.HttpException: The server responded with error 401"))
+            {
+                Log.Error("Discord responded with error 401:Unauthorized.  Is your Token/Key valid?");
+                return Task.CompletedTask;
+            }
+
+            if (msg.Message.Contains("A task was canceled"))
+            {
+                // Don't report this, task cancellations is used when the bot goes offline.
+                return Task.CompletedTask;
+            }
+            
             // Convert and pass Discord logging through to Torch.
             switch (msg.Severity)
             {

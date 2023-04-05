@@ -66,13 +66,14 @@ namespace SimpleBot.Utils
                             PaymentDate = DateTime.Now,
                             ExpiryDate = DateTime.Now + TimeSpan.FromDays(Instance.Config.PayoutExpiry),
                             Commands = commandsToSend,
-                            DiscordId = registeredUser.DiscordId
+                            DiscordId = registeredUser.DiscordId,
+                            DiscordName = registeredUser.DiscordUsername
                         });
                         
                         registeredUser.LastPayout = DateTime.Now;
                     }
                 }
-                
+                Instance.Save();
                 return Task.CompletedTask;
             }
             
@@ -97,12 +98,13 @@ namespace SimpleBot.Utils
                     PaymentDate = DateTime.Now,
                     ExpiryDate = DateTime.Now + TimeSpan.FromDays(Instance.Config.PayoutExpiry),
                     Commands = commandsToSend,
-                    DiscordId = registeredUser.DiscordId
+                    DiscordId = registeredUser.DiscordId,
+                    DiscordName = registeredUser.DiscordUsername
                 });
                         
                 registeredUser.LastPayout = DateTime.Now;
             }
-            
+            Instance.Save();
             return Task.CompletedTask;
         }
     }

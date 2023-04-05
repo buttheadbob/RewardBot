@@ -5,7 +5,6 @@ using System.IO;
 using System.Timers;
 using System.Windows.Controls;
 using System.Windows.Data;
-using NLog.Fluent;
 using Torch;
 using Torch.API;
 using Torch.API.Managers;
@@ -32,10 +31,10 @@ namespace SimpleBot
         public static readonly Logger Log = LogManager.GetLogger("Discord Reward Bot");
         public static Bot DiscordBot;
         public ObservableCollection<Members> DiscordMembers = new ObservableCollection<Members>();
-        public object DiscordMembersLock = new object();
+        public readonly object DiscordMembersLock = new object();
         public bool WorldOnline;
         public static readonly CommandsManager CommandsManager = new CommandsManager();
-        private Timer ScheduledWork = new Timer();
+        private Timer _scheduledWork = new Timer();
         
         public override async void Init(ITorchBase torch)
         {
@@ -52,9 +51,10 @@ namespace SimpleBot
 
             Save();
             Instance = this;
-            ScheduledWork.Interval = TimeSpan.FromMinutes(5).TotalMilliseconds; // Easier than doing math to change :)
-            ScheduledWork.Elapsed += (sender, args) => { WorkScheduled(); }; 
-            ScheduledWork.Start();
+            Config.SetBotStatus(BotStatusEnum.Offline);
+            _scheduledWork.Interval = TimeSpan.FromMinutes(5).TotalMilliseconds; // Easier than doing math to change :)
+            _scheduledWork.Elapsed += (sender, args) => { WorkScheduled(); }; 
+            _scheduledWork.Start();
             DiscordBot = new Bot();
             if (Config.EnabledOffline)
                 await DiscordBot.Connect();
@@ -67,7 +67,7 @@ namespace SimpleBot
                 case TorchSessionState.Loaded:
                     Log.Info("Session Loaded!");
                     WorldOnline = true;
-                    if (Instance.Config.EnabledOnline && Instance.Config.BotStatus == BotStatus.Offline)
+                    if (Instance.Config.EnabledOnline && !Instance.Config.IsBotOnline())
                         await DiscordBot.Connect();
                     break;
 

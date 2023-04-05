@@ -7,11 +7,25 @@ namespace SimpleBot.Utils
 {
     public class CommandsManager
     {
-        private readonly CommandManager _manager = MainBot.Instance.Torch.CurrentSession.Managers.GetManager<CommandManager>();
-        public CommandsManager() { }
-        
-        public Task Run(string command)
+        private CommandManager _manager;
+
+        private Task<bool> GetTorchCommandManager()
         {
+            if (_manager != null)
+                return Task.FromResult(true);
+            
+            if (MainBot.Instance.Torch.CurrentSession.Managers.GetManager<CommandManager>() == null)
+                return Task.FromResult(false);
+            
+            _manager = MainBot.Instance.Torch.CurrentSession.Managers.GetManager<CommandManager>();
+            return Task.FromResult(true);
+        }
+        
+        public async Task Run(string command)
+        {
+            if (await GetTorchCommandManager() == false)
+                return;
+                
             if (_manager == null)
                 MainBot.Log.Error($"Command Manager unable to run command [{command}].  Torch has no active command manager.");
             
@@ -19,7 +33,6 @@ namespace SimpleBot.Utils
                 MainBot.Log.Error($"Command Manager unable to run command [{command}].  The server is offline.");
             
             _manager?.HandleCommandFromServer(command);
-            return Task.CompletedTask;
         }
 
         public async Task RunSlow(List<string> commands)
@@ -28,7 +41,7 @@ namespace SimpleBot.Utils
             // and possible server bogging if the commands require heavy processing.  This only blocks the current
             // task in awaitable state, so everything else can still run.
             
-            if (_manager == null)
+            if (await GetTorchCommandManager() == false)
                 MainBot.Log.Error($"Command Manager unable to run (slow) commands.  Torch has no active command manager.");
             
             if (!MainBot.Instance.WorldOnline)
