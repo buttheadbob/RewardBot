@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+﻿using System;
 using System.Collections.Specialized;
 using System.Text;
 using System.Windows;
@@ -8,66 +8,62 @@ using System.Windows.Input;
 using System.Windows.Navigation;
 using System.Windows.Threading;
 using Discord;
+using Discord.WebSocket;
+using AsynchronousObservableConcurrentList;
 using SimpleBot.Settings;
-using SimpleBot.Utils;
 using static SimpleBot.MainBot;
 
 namespace SimpleBot.UI
 {
     public sealed partial class SimpleBotControl : UserControl
     {
-        private ObservableCollection<Members> _filteredDiscordMembers = new ObservableCollection<Members>();
-        private readonly object _filteredDiscordMembersLock = new object();
-        private ObservableCollection<RegisteredUsers> _filteredRegisteredUsers = new ObservableCollection<RegisteredUsers>();
-        private readonly object _filteredRegisteredUsersLock = new object();
+        public AsynchronousObservableConcurrentList<SocketGuildUser> FilteredDiscordMembers = new AsynchronousObservableConcurrentList<SocketGuildUser>();
+        public static object FilteredDiscordMembers_LOCK = new object();
 
+        public AsynchronousObservableConcurrentList<RegisteredUsers> FilteredRegisteredUsers = new AsynchronousObservableConcurrentList<RegisteredUsers>(); 
+        public static object FilteredRegisteredUsers_LOCK = new object();
+        
         private delegate void UpdateUI();
         
         public SimpleBotControl()
         {
+            BindingOperations.EnableCollectionSynchronization(FilteredDiscordMembers , FilteredDiscordMembers_LOCK);
+            BindingOperations.EnableCollectionSynchronization(FilteredRegisteredUsers , FilteredRegisteredUsers_LOCK);
+            
             InitializeComponent();
-            BindingOperations.EnableCollectionSynchronization(_filteredDiscordMembers, _filteredDiscordMembersLock);
-            BindingOperations.EnableCollectionSynchronization(_filteredRegisteredUsers, _filteredRegisteredUsersLock);
             DataContext = Instance.Config;
             DiscordMembersGrid.DataContext = this;
-            DiscordMembersGrid.ItemsSource = _filteredDiscordMembers;
             RegisteredMembersGrid.DataContext = this;
-            RegisteredMembersGrid.ItemsSource = _filteredRegisteredUsers;
             FilteredCount.DataContext = this;
             StatusLabel.DataContext = Instance.Config;
-            RewardCommandsList.ItemsSource = Instance.Config.RewardCommands;
+            RewardCommandsList.ItemsSource = Instance.Config.Rewards;
+            tbRoleComboBox.ItemsSource = MainBot.DiscordBot.Roles;
             Instance.DiscordMembers.CollectionChanged += DiscordMembersOnCollectionChanged;
             Instance.Config.RegisteredUsers.CollectionChanged += RegisteredUsersOnCollectionChanged;
+            RegisteredUsersOnCollectionChanged(null, null); // This looks dumb but forces the gridview to load all the data on startup and it works.
         }
 
         private void RegisteredUsersOnCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
-            _filteredRegisteredUsers.Clear();
-            foreach (RegisteredUsers registeredUser in Instance.Config.RegisteredUsers)
-            {
-                _filteredRegisteredUsers.Add(registeredUser);
-            }
-
-            FilteredRegisteredCount.Text = _filteredRegisteredUsers.Count.ToString() + " / " + Instance.Config.RegisteredUsers.Count.ToString();
+            DiscordMembersGrid.Dispatcher.BeginInvoke((Action)(() => { RegisteredMembersGrid.ItemsSource = null; }));
+            FilteredRegisteredUsers.Clear();
+            FilteredRegisteredUsers.AddRange(Instance.Config.RegisteredUsers);
+            FilteredRegisteredCount.Dispatcher.BeginInvoke((Action)(() => { FilteredRegisteredCount.Text = FilteredRegisteredUsers.Count.ToString() + " / " + Instance.Config.RegisteredUsers.Count.ToString(); })); 
+            DiscordMembersGrid.Dispatcher.BeginInvoke((Action)(() => { RegisteredMembersGrid.ItemsSource = FilteredRegisteredUsers; }));
         }
 
         private void DiscordMembersOnCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
-            lock (_filteredDiscordMembersLock)
-            {
-                _filteredDiscordMembers.Clear();
-                foreach (Members member in Instance.DiscordMembers)
-                {
-                    _filteredDiscordMembers.Add(member);
-                }
-            }
-
+            DiscordMembersGrid.Dispatcher.BeginInvoke((Action)(() => {DiscordMembersGrid.ItemsSource = null; })); 
+            FilteredDiscordMembers.Clear();
+            FilteredDiscordMembers.AddRange(Instance.DiscordMembers);
             FilteredCount.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new UpdateUI(UpdateCounts));
+            DiscordMembersGrid.Dispatcher.BeginInvoke((Action)(() => {DiscordMembersGrid.ItemsSource = FilteredDiscordMembers; }));
         }
 
         private void UpdateCounts()
         {
-            FilteredCount.Text = _filteredDiscordMembers.Count.ToString() + " / " + Instance.DiscordMembers.Count.ToString();
+            FilteredCount.Text = FilteredDiscordMembers.Count.ToString() + " / " + Instance.DiscordMembers.Count.ToString();
         }
 
         private void SaveButton_OnClick(object sender, RoutedEventArgs e)
@@ -90,7 +86,7 @@ namespace SimpleBot.UI
         private async void ForceBoosterRewardPayout_OnClick(object sender, RoutedEventArgs e)
         {
             if (Instance.Config.EnabledOnline && MainBot.DiscordBot.Guilds.Count >= 1)
-                await Helper.Payout(true);
+                await MainBot.DiscordBot.RewardManager.Payout();
             else
                 Log.Warn("Unable to payout rewards.  Bot offline or not in any servers.");
         }
@@ -107,87 +103,101 @@ namespace SimpleBot.UI
         private void FilterDiscordMembers_OnKeyUp(object sender, KeyEventArgs e)
         {
             TextBox tempTextBox = (TextBox)sender;
+            if (tempTextBox is null)
+                return;
+            
             DiscordMembersGrid.ItemsSource = null;
-            _filteredDiscordMembers.Clear();
+            FilteredDiscordMembers.Clear();
 
-            foreach (Members member in Instance.DiscordMembers)
+            foreach (SocketGuildUser member in Instance.DiscordMembers)
             {
                 if (!string.IsNullOrEmpty(member.Nickname) && member.Nickname.ToLower().Contains(tempTextBox.Text.ToLower()))
                 {
-                    _filteredDiscordMembers.Add(member);
+                    FilteredDiscordMembers.Add(member);
                     continue;
                 }
 
                 if (!string.IsNullOrEmpty(member.Username) && member.Username.ToLower().Contains(tempTextBox.Text.ToLower()))
                 {
-                    _filteredDiscordMembers.Add(member);
+                    FilteredDiscordMembers.Add(member);
                     continue;
                 }
 
-                if (!string.IsNullOrEmpty(member.UserId.ToString()) && member.UserId.ToString().Contains(tempTextBox.Text))
+                if (!string.IsNullOrEmpty(member.Id.ToString()) && member.Id.ToString().Contains(tempTextBox.Text))
                 {
-                    _filteredDiscordMembers.Add(member);
+                    FilteredDiscordMembers.Add(member);
                     continue;
                 }
             }
 
-            FilteredCount.Text = _filteredDiscordMembers.Count.ToString() + " / " + Instance.DiscordMembers.Count.ToString();
-            DiscordMembersGrid.ItemsSource = _filteredDiscordMembers;
+            FilteredCount.Text = FilteredDiscordMembers.Count.ToString() + " / " + Instance.DiscordMembers.Count.ToString();
+            DiscordMembersGrid.ItemsSource = FilteredDiscordMembers;
         }
 
         private void FilterRegisteredMembers_OnKeyUp(object sender, KeyEventArgs e)
         {
             TextBox tempTextBox = (TextBox)sender;
+            if (tempTextBox is null)
+                return;
+            
             RegisteredMembersGrid.ItemsSource = null;
-            _filteredRegisteredUsers.Clear();
+            FilteredRegisteredUsers.Clear();
 
             foreach (RegisteredUsers registeredMember in Instance.Config.RegisteredUsers)
             {
                 if (!string.IsNullOrEmpty(registeredMember.DiscordUsername) && registeredMember.DiscordUsername.ToLower().Contains(tempTextBox.Text.ToLower()))
                 {
-                    _filteredRegisteredUsers.Add(registeredMember);
+                    FilteredRegisteredUsers.Add(registeredMember);
                     continue;
                 }
 
                 if (!string.IsNullOrEmpty(registeredMember.DiscordId.ToString()) && registeredMember.DiscordId.ToString().Contains(tempTextBox.Text.ToLower()))
                 {
-                    _filteredRegisteredUsers.Add(registeredMember);
+                    FilteredRegisteredUsers.Add(registeredMember);
                     continue;
                 }
 
                 if (!string.IsNullOrEmpty(registeredMember.IngameSteamId.ToString()) && registeredMember.IngameSteamId.ToString().Contains(tempTextBox.Text))
                 {
-                    _filteredRegisteredUsers.Add(registeredMember);
+                    FilteredRegisteredUsers.Add(registeredMember);
                     continue;
                 }
 
                 if (!string.IsNullOrEmpty(registeredMember.IngameName) &&
                     registeredMember.IngameName.ToLower().Contains(tempTextBox.Text.ToLower()))
                 {
-                    _filteredRegisteredUsers.Add(registeredMember);
+                    FilteredRegisteredUsers.Add(registeredMember);
                     continue;
                 }
             }
 
-            FilteredCount.Text = _filteredRegisteredUsers.Count.ToString() + " / " + Instance.Config.RegisteredUsers.Count.ToString();
-            RegisteredMembersGrid.ItemsSource = _filteredRegisteredUsers;
+            FilteredCount.Text = FilteredRegisteredUsers.Count.ToString() + " / " + Instance.Config.RegisteredUsers.Count.ToString();
+            RegisteredMembersGrid.ItemsSource = FilteredRegisteredUsers;
         }
 
         private void RewardCommandsList_OnSelected(object sender, RoutedEventArgs e)
         {
-            Settings.Commands command = RewardCommandsList.SelectedItem as Settings.Commands;
+            Settings.Reward command = RewardCommandsList.SelectedItem as Settings.Reward;
             ShowCommand.Text = command?.Command;
         }
 
         private void NewCommand_OnClick(object sender, RoutedEventArgs e)
         {
-            Settings.Commands command = new Settings.Commands
+            if (!int.TryParse(Expires.Text, out int expiredInDays))
+            {
+                MessageBox.Show("Invalid Entry: Day(s) until expired", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+            Settings.Reward command = new Settings.Reward
             {
                 Name = NewCommandName.Text,
-                Command = CommandText.Text
+                Command = CommandText.Text,
+                CommandRole = tbCommandRole.Text,
+                DaysToPay = tbDaysToPay.Text,
+                ExpiresInDays = expiredInDays
             };
 
-            Instance.Config.RewardCommands.Add(command);
+            Instance.Config.Rewards.Add(command);
             
             StringBuilder logNewCommand = new StringBuilder();
             logNewCommand.AppendLine("New reward command created:");
@@ -203,7 +213,7 @@ namespace SimpleBot.UI
             if ( MessageBox.Show("Are you sure you want to run all the reward commands on ALL players, regardless if they have already received their rewards or not?", "CAUTION!!!", MessageBoxButton.OKCancel, MessageBoxImage.Warning) == MessageBoxResult.Cancel) 
                 return;
             
-            await Helper.Payout(true);
+            await MainBot.DiscordBot.RewardManager.Payout();
         }
 
         private void Hyperlink_OnRequestNavigate(object sender, RequestNavigateEventArgs e)
@@ -216,7 +226,7 @@ namespace SimpleBot.UI
         {
             
             DmPopup.IsOpen = true;
-            Members selectedUser = (Members)DiscordMembersGrid.SelectedItem;
+            SocketGuildUser selectedUser = (SocketGuildUser)DiscordMembersGrid.SelectedItem;
             if (selectedUser == null)
             {
                 PopupDialogFinished();
@@ -228,7 +238,7 @@ namespace SimpleBot.UI
 
         private async void SendMessage_OnClick(object sender, RoutedEventArgs e)
         {
-            Members selectedUser = (Members)DiscordMembersGrid.SelectedItem;
+            SocketGuildUser selectedUser = (SocketGuildUser)DiscordMembersGrid.SelectedItem;
             
             if (selectedUser == null)
             {
@@ -251,7 +261,7 @@ namespace SimpleBot.UI
                 return;
             }
             DmPopup.IsOpen = false;
-            IUser user = await MainBot.DiscordBot.Client.GetUserAsync(selectedUser.UserId);
+            IUser user = await MainBot.DiscordBot.Client.GetUserAsync(selectedUser.Id);
             string results = await MainBot.DiscordBot.UserUtils.SendDirectMessage(user, PopupMessage.Text);
             MessageBox.Show(results, "Reply from Discord", MessageBoxButton.OK, MessageBoxImage.Information);
             PopupDialogFinished();
@@ -267,6 +277,67 @@ namespace SimpleBot.UI
         private void CancelPopup_OnClick(object sender, RoutedEventArgs e)
         {
             PopupDialogFinished();
+        }
+
+        private void EnableOnlineCheckBox_OnClick(object sender, RoutedEventArgs e)
+        {
+            CheckBox cb = (CheckBox)sender;
+            switch (cb.IsChecked)
+            {
+                case null:
+                    return;
+                default:
+                    Instance.Config.EnabledOnline = cb.IsChecked.Value;
+                    break;
+            }
+        }
+
+        private void EnableOfflineCheckBox_OnClick(object sender, RoutedEventArgs e)
+        {
+            CheckBox cb = (CheckBox)sender;
+            switch (cb.IsChecked)
+            {
+                case null:
+                    return;
+                default:
+                    Instance.Config.EnabledOffline = cb.IsChecked.Value;
+                    break;
+            }
+        }
+
+        private void RemoveBannedUsersFromRegistryCheckBox_OnClick(object sender, RoutedEventArgs e)
+        {
+            CheckBox cb = (CheckBox)sender;
+            switch (cb.IsChecked)
+            {
+                case null:
+                    return;
+                default:
+                    Instance.Config.RemoveBannedUsersFromRegistry = cb.IsChecked.Value;
+                    break;
+            }
+        }
+        
+        private async void CreateManualPayout_OnClick(object sender, RoutedEventArgs e)
+        {
+            if (!ulong.TryParse(tbSteamID.Text, out ulong steamId))
+            {
+                MessageBox.Show("The SteamID is invalid, try again.  Only numbers are allowed.", "Oopsies!", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            if (!int.TryParse(tbManualExpires.Text, out int intManualExpires))
+            {
+                MessageBox.Show("The expiry is invalid, try again.  Only numbers are allowed.", "Oopsies!", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            await MainBot.DiscordBot.RewardManager.ManualPayout(steamId, tbCommand.Text, intManualExpires);
+        }
+
+        private void TbRoleComboBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            tbCommandRole.Text = ((ComboBox)sender).SelectionBoxItem.ToString();
         }
     }
 }

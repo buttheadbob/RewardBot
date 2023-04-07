@@ -1,10 +1,10 @@
 ﻿using NLog;
 using System;
-using System.Collections.ObjectModel;
 using System.IO;
 using System.Timers;
 using System.Windows.Controls;
-using System.Windows.Data;
+using Discord.WebSocket;
+using AsynchronousObservableConcurrentList;
 using Torch;
 using Torch.API;
 using Torch.API.Managers;
@@ -22,16 +22,16 @@ namespace SimpleBot
     {
         private const string ConfigFileName = "SimpleBotConfig.cfg";
 
-        private SimpleBotControl _control;
-        public UserControl GetControl() => _control ?? (_control = new SimpleBotControl());
+        public SimpleBotControl Control;
+        public UserControl GetControl() => Control ?? (Control = new SimpleBotControl());
 
         private Persistent<SimpleBotConfig> _config;
         public SimpleBotConfig Config => _config?.Data;
         public static MainBot Instance;
         public static readonly Logger Log = LogManager.GetLogger("Discord Reward Bot");
         public static Bot DiscordBot;
-        public ObservableCollection<Members> DiscordMembers = new ObservableCollection<Members>();
-        public readonly object DiscordMembersLock = new object();
+        public AsynchronousObservableConcurrentList<SocketGuildUser> DiscordMembers = new AsynchronousObservableConcurrentList<SocketGuildUser>();
+        
         public bool WorldOnline;
         public static readonly CommandsManager CommandsManager = new CommandsManager();
         private Timer _scheduledWork = new Timer();
@@ -39,7 +39,6 @@ namespace SimpleBot
         public override async void Init(ITorchBase torch)
         {
             base.Init(torch);
-            BindingOperations.EnableCollectionSynchronization(DiscordMembers, DiscordMembersLock);
 
             SetupConfig();
 
@@ -116,7 +115,7 @@ namespace SimpleBot
             {
                 if (!int.TryParse(payDate, out int payDATE)) continue;
                 if (payDATE == DateTime.Now.Day)
-                    await Helper.Payout();
+                    await DiscordBot.RewardManager.Payout();
             }
             
             // Clear expired payouts

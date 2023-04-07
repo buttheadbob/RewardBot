@@ -6,13 +6,13 @@ using Discord.WebSocket;
 
 namespace SimpleBot.DiscordBot.BOT_SlashCommands
 {
-    public class UserCommands
+    public class GuildCommandBuilder
     {
         private SocketGuild _guild;
 
-        private UserCommands() { }  // We're using a factory constructor, leave this blank.
+        private GuildCommandBuilder() { }  // We're using a factory constructor, leave this blank.
 
-        private async Task<UserCommands> InitAsync()
+        private async Task<GuildCommandBuilder> InitAsync()
         {
             _guild = MainBot.DiscordBot.Client.GetGuild(MainBot.DiscordBot.Guilds[0].Id);
             
@@ -32,28 +32,30 @@ namespace SimpleBot.DiscordBot.BOT_SlashCommands
             countRewards.WithDescription("Tells you how many rewards you have available.");
             
             await BuildCommands(boostRewardRegister);
-            MainBot.Log.Info($"Building Command -> {boostRewardRegister.Name}");
+            MainBot.Log.Info($"Prepairing Command -> {boostRewardRegister.Name}");
             
             await BuildCommands(boostRewardUnregister);
-            MainBot.Log.Info($"Building Command -> {boostRewardUnregister.Name}");
+            MainBot.Log.Info($"Prepairing Command -> {boostRewardUnregister.Name}");
 
             await BuildCommands(countRewards);
-            MainBot.Log.Info($"Building Command -> {countRewards.Name}");
-                
+            MainBot.Log.Info($"Prepairing Command -> {countRewards.Name}");
+
+            await MainBot.DiscordBot.HelperUtils.SetGuildCommands();
             return this;
         }
         
-        public static Task<UserCommands> CreateAsync()
+        public static Task<GuildCommandBuilder> CreateAsync()
         {
-            UserCommands ret = new UserCommands();
+            GuildCommandBuilder ret = new GuildCommandBuilder();
             return ret.InitAsync();
         }
 
-        private async Task BuildCommands(SlashCommandBuilder command)
+        private Task BuildCommands(SlashCommandBuilder command)
         {
             try
             {
-                await _guild.CreateApplicationCommandAsync(command.Build());
+                MainBot.DiscordBot.AllCommands.Add(command.Build());
+                //await _guild.CreateApplicationCommandAsync(command.Build());
             }
             catch (HttpException exception)
             {
@@ -68,6 +70,7 @@ namespace SimpleBot.DiscordBot.BOT_SlashCommands
                 exceptionFormatted.AppendLine("HTTP Code: " + exception.HttpCode);
                 exceptionFormatted.AppendLine("Discord Code: " + exception.DiscordCode);
                 exceptionFormatted.AppendLine("DiscordJsonErrors: ");
+                
                 foreach (DiscordJsonError error in exception.Errors)
                 {
                     foreach (DiscordError discordError in error.Errors)
@@ -79,6 +82,7 @@ namespace SimpleBot.DiscordBot.BOT_SlashCommands
 
                 MainBot.Log.Error(exceptionFormatted);
             }
+            return Task.CompletedTask;
         }
     }
 }

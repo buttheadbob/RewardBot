@@ -58,7 +58,7 @@ namespace SimpleBot.DiscordBot.BOT_SlashCommands
             {
                 LinkRequest request = Instance.Config.LinkRequests[index];
                 if (request.DiscordId != command.User.Id) continue;
-                await command.RespondAsync($"You have already received a code. This is valid for up to 24 hours. Please go into the game and type in chat -> !RewardsBot Link {request.Code}", ephemeral:true);
+                await command.RespondAsync($"You have already received a code. This is valid for up to 24 hours. Please go into the game and type in chat -> !RewardBot Link {request.Code}", ephemeral:true);
                 return;
             }
 
@@ -72,7 +72,7 @@ namespace SimpleBot.DiscordBot.BOT_SlashCommands
             
             Instance.Save();
 
-            await command.RespondAsync($"Your link code is {code}. Go into the game and in type the following in chat -> !RewardsBot Link {code}", ephemeral:true);
+            await command.RespondAsync($"Your link code is {code}. Go into the game and in type the following in chat -> !RewardBot Link {code}", ephemeral:true);
         }
 
         private static async Task RewardsUnlink(SocketSlashCommand command)
