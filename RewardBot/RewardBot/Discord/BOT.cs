@@ -5,20 +5,22 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Data;
-using SimpleBot.DiscordBot.BOT_SlashCommands;
-using SimpleBot.DiscordBot.Utils;
-using SimpleBot.Settings;
-using SimpleBot.Utils;
-using static SimpleBot.MainBot;
+using RewardBot.DiscordBot.BOT_SlashCommands;
+using RewardBot.DiscordBot.Utils;
+using RewardBot.Settings;
+using RewardBot.Utils;
+using static RewardBot.MainBot;
 using AsynchronousObservableConcurrentList;
-using Helper = SimpleBot.DiscordBot.Utils.Helper;
+using Helper = RewardBot.DiscordBot.Utils.Helper;
+using Log = RewardBot.Utils.Log;
 
-namespace SimpleBot.DiscordBot
+namespace RewardBot.DiscordBot
 {
     public sealed class Bot
     {
         public DiscordSocketClient Client;
         public List<SocketGuild> Guilds = new List<SocketGuild>();
+        public SocketGuild Guild;
         public UserUtils UserUtils = new UserUtils();
         public Helper HelperUtils = new Helper();
         public List<SocketApplicationCommand> ExistingCommands = new List<SocketApplicationCommand>();
@@ -96,6 +98,7 @@ namespace SimpleBot.DiscordBot
 
         private async Task ClientOnDisconnected(Exception arg)
         {
+            await Client.SetStatusAsync(UserStatus.AFK);
             Instance.Config.SetBotStatus(BotStatusEnum.Disconnecting);
             await Client.StopAsync();
             await Client.LogoutAsync();
@@ -117,8 +120,21 @@ namespace SimpleBot.DiscordBot
         private Task _client_Connected()
         {
             Guilds = new List<SocketGuild>(Client.Guilds); // Get list of all servers the bot is on.  This should only contain 1.
+            
+            Instance.Config.SetBotStatus(BotStatusEnum.Online);
+            
+            return Task.CompletedTask;
+        }
+
+        private async Task VerifySingleGuild()
+        {
             if (Guilds.Count != 1)
             {
+                foreach (SocketGuild guild in Client.Guilds)
+                {
+                    await guild.DownloadUsersAsync();
+                }
+                
                 StringBuilder tooManyGuildsError = new StringBuilder();
                 tooManyGuildsError.AppendLine("This bot is registered on more than 1 Discord server.");
                 tooManyGuildsError.AppendLine("| List of Servers |");
@@ -135,33 +151,47 @@ namespace SimpleBot.DiscordBot
                 }
                 tooManyGuildsError.AppendLine("** THIS BOT SHOULD ONLY BE REGISTERED ON 1 DISCORD SERVER, UNEXPECTED RESULTS MAY OCCUR **");
 
-                Log.Error(tooManyGuildsError);
+                await MainBot.Log.Error(tooManyGuildsError);
             }
-            Instance.Config.SetBotStatus(BotStatusEnum.Online);
-            
-            return Task.CompletedTask;
         }
 
         private async Task ClientOnReady()
         {
-            await GetRoles(Guilds[0]);
-            await GetUsersAsync(Guilds[0]);
-            SocketGuildUser botUser = Guilds[0].GetUser(Client.CurrentUser.Id);
+            Guild = Client.GetGuild(Guilds[0].Id);
+            await GetRoles();
+            await GetUsersAsync();
+            SocketGuildUser botUser = Guild.GetUser(Client.CurrentUser.Id);
             await botUser.ModifyAsync(x => { x.Nickname = Instance.Config.BotName; });
-            await Client.SetStatusAsync(UserStatus.DoNotDisturb);
             await Client.SetGameAsync(Instance.Config.BotStatusMessage, null, ActivityType.Playing);
             Client.UserJoined += _client_UserJoined;
             Client.UserLeft += _client_UserLeft;
             Client.UserBanned += ClientOnUserBanned;
             Client.SlashCommandExecuted += CommandRan.ClientOnSlashCommandExecuted;
+            switch (Instance.WorldOnline)
+            {
+                case true:
+                    await Client.SetStatusAsync(UserStatus.Online);
+                    break;
+                case false:
+                    await Client.SetStatusAsync(UserStatus.Idle);
+                    break;
+            }
+
             Instance.Config.SetBotStatus(BotStatusEnum.Online);
+            await VerifySingleGuild();
         }
 
-        private Task GetRoles(SocketGuild guild)
+        private async Task GetRoles()
         {
-            IReadOnlyCollection<SocketRole> roles = guild.Roles;
-            Instance.Control.Dispatcher.BeginInvoke((Action)(()=> {Roles.AddRange(roles);}));
-            return Task.CompletedTask;
+            IReadOnlyCollection<SocketRole> roles = Guild.Roles;
+            
+            await Instance.Control.Dispatcher.BeginInvoke((Action)(()=> {Roles.AddRange(roles);}));
+            await Instance.Control.tbRoleComboBox.Dispatcher.BeginInvoke((Action)(() =>
+            {
+                Instance.Control.tbRoleComboBox.ItemsSource = null;
+                Instance.Control.tbRoleComboBox.ItemsSource = MainBot.DiscordBot.Roles;
+                
+            }));
         }
 
         private Task ClientOnUserBanned(SocketUser bannedUser, SocketGuild server)
@@ -187,14 +217,14 @@ namespace SimpleBot.DiscordBot
             return Task.CompletedTask;
         }
 
-        private Task _client_UserLeft(SocketGuild guild, SocketUser user)
+        private async Task _client_UserLeft(SocketGuild guild, SocketUser user)
         {
-            Log.Info($"{user.Username} has left {guild.Name} Discord");
+            await MainBot.Log.Info($"{user.Username} has left {guild.Name} Discord");
 
             for (int i = Instance.DiscordMembers.Count -1; i >= 0; i--)
             {
                 if (Instance.DiscordMembers[i].Id != user.Id) continue;
-                Log.Info($"{user.Username} subscription to {Instance.Config.BotName} has been cancelled.");
+                await MainBot.Log.Info($"{user.Username} subscription to {Instance.Config.BotName} has been cancelled.");
                 Instance.DiscordMembers.RemoveAt(i);
 
                 SocketGuildUser removeMember = null;
@@ -206,16 +236,13 @@ namespace SimpleBot.DiscordBot
                     break;
                 }
 
-                if (removeMember == null)
-                    return Task.CompletedTask;
+                if (removeMember == null) return;
                 
-                if (string.IsNullOrEmpty(removeMember.Username))
-                    return Task.CompletedTask;
+                if (string.IsNullOrEmpty(removeMember.Username)) return;
 
                 Instance.DiscordMembers.Remove(removeMember);
                 break;
             }
-            return Task.CompletedTask;
         }
 
         private Task _client_UserJoined(SocketGuildUser user)
@@ -224,33 +251,33 @@ namespace SimpleBot.DiscordBot
             return Task.CompletedTask;
         }
 
-        private async Task GetUsersAsync(SocketGuild guild)
+        private async Task GetUsersAsync()
         {
-            await guild.DownloadUsersAsync(); // Gets all users on the first server in the list of servers.
-            Instance.DiscordMembers.AddRange(guild.Users);
+            await Guild.DownloadUsersAsync(); // Gets all users on the first server in the list of servers.
+            Instance.DiscordMembers.AddRange(Guild.Users);
         }
 
-        private static Task Logging(LogMessage msg)
+        private static async Task Logging(LogMessage msg)
         {
             if (msg.Message == null)
             {
-                Log.Error(msg.ToString);
-                return Task.CompletedTask;
+                await MainBot.Log.Error(msg.ToString());
+                return;
             }
 
             if (msg.Message.Contains("Discord.Net v3.10.0 (API v10)"))
-                return Task.CompletedTask; // Don't need this spammed in logs on every restart.
+                return; // Don't need this spammed in logs on every restart.
             
             if (msg.ToString().Contains("Discord.Net.HttpException: The server responded with error 401"))
             {
-                Log.Error("Discord responded with error 401:Unauthorized.  Is your Token/Key valid?");
-                return Task.CompletedTask;
+                await MainBot.Log.Error("Discord responded with error 401:Unauthorized.  Is your Token/Key valid?");
+                return;
             }
 
-            if (msg.Message.Contains("A task was canceled"))
+            if (msg.Exception is TaskCanceledException)
             {
                 // Don't report this, task cancellations is used when the bot goes offline.
-                return Task.CompletedTask;
+                return;
             }
             
             // Convert and pass Discord logging through to Torch.
@@ -258,28 +285,26 @@ namespace SimpleBot.DiscordBot
             {
                 case LogSeverity.Critical:
                 case LogSeverity.Error:
-                    Log.Error(msg.ToString());
+                    await MainBot.Log.Error(msg.ToString());
                     break;
 
                 case LogSeverity.Debug:
-                    Log.Debug(msg.ToString());
+                    await MainBot.Log.Debug(msg.ToString());
                     break;
 
                 case LogSeverity.Warning:
-                    Log.Warn(msg.ToString());
+                    await MainBot.Log.Warn(msg.ToString());
                     break;
 
                 case LogSeverity.Info:
                 case LogSeverity.Verbose:
-                    Log.Info(msg.ToString());
+                    await MainBot.Log.Info(msg.ToString());
                     break;
 
                 default:
-                    Log.Warn($"Invalid SeverityLevel from Discord Log --> {msg.Severity} :: {msg.Source} :: {msg.Message}");
+                    await MainBot.Log.Warn($"Invalid SeverityLevel from Discord Log --> {msg.Severity} :: {msg.Source} :: {msg.Message}");
                     break;
             }
-            
-            return Task.CompletedTask;
         }
     }
 }

@@ -2,13 +2,13 @@
 using System.Collections.Generic;
 using Torch.Commands;
 using Torch.Commands.Permissions;
-using SimpleBot.Settings;
+using RewardBot.Settings;
 using VRage.Game.ModAPI;
 
-namespace SimpleBot.Commands
+namespace RewardBot.Commands
 {
     [Category("RewardBot")]
-    public sealed class SimpleBotCommands : CommandModule
+    public sealed class RewardBotCommands : CommandModule
     {
         private MainBot Plugin => (MainBot)Context.Plugin;
         
@@ -27,7 +27,7 @@ namespace SimpleBot.Commands
         
         [Command("Link", "Links your Steam account to your Discord account using a special code you received in Discord.  Use -> !RewardBot Link <code>")]
         [Permission(MyPromoteLevel.None)]
-        public void LinkAccount(string code)
+        public async void LinkAccount(string code)
         {
             if (Context.Player == null)
             {
@@ -52,7 +52,7 @@ namespace SimpleBot.Commands
                 };
                 Plugin.Config.RegisteredUsers.Add(user);
                 Plugin.Config.LinkRequests.Remove(request);
-                Plugin.Save();
+                await Plugin.Save();
                 
                 Context.Respond($"Your SteamID [{user.IngameSteamId}] has successfully been linked to your Discord account [{user.DiscordUsername}], and are now registered to receive Boost Rewards if your boosting the server!");
                 foundCode = true;
@@ -67,7 +67,7 @@ namespace SimpleBot.Commands
         
         [Command("Unlink", "This will remove any connection between your SteamID and Discord account on UpsideDown.  No information will be retained.  You will also no longer be eligible to receive some Rewards if qualified.")]
         [Permission(MyPromoteLevel.None)]
-        public void Unlink()
+        public async void Unlink()
         {
             if (Context.Player == null)
             {
@@ -89,7 +89,7 @@ namespace SimpleBot.Commands
             {
                 Plugin.Config.RegisteredUsers.Remove(foundUser);
                 Context.Respond($"Your SteamId is no longer linked to your Discord.  You are no longer able to receive any rewards that require this connection.");
-                Plugin.Save();
+                await Plugin.Save();
             }
             else 
             {
@@ -127,14 +127,14 @@ namespace SimpleBot.Commands
             if (commands.Count > 8)
             {
                 await MainBot.CommandsManager.RunSlow(commands);
-                Plugin.Save();
+                await Plugin.Save();
                 return;
             }
 
             foreach (string command in commands)
             {
                 await MainBot.CommandsManager.Run(command);
-                Plugin.Save();
+                await Plugin.Save();
             }
         }
     }

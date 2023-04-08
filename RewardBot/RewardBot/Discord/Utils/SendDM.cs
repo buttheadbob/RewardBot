@@ -2,7 +2,7 @@
 using Discord;
 using Discord.Net;
 
-namespace SimpleBot.DiscordBot.Utils
+namespace RewardBot.DiscordBot.Utils
 {
     public class UserUtils
     {
@@ -16,7 +16,7 @@ namespace SimpleBot.DiscordBot.Utils
             catch (HttpException error)
             {
                 DiscordErrorCode? errCode = error.DiscordCode;
-                string errRespone = string.Empty;
+                string errRespone;
                 
                 switch (errCode)
                 {
@@ -33,7 +33,7 @@ namespace SimpleBot.DiscordBot.Utils
                         break;
                     
                     default:
-                        errRespone = error.Message;
+                        errRespone = error.Reason + " :: " + error.Message;
                         break;
                 }
 

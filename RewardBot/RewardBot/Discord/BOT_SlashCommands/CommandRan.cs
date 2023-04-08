@@ -1,10 +1,11 @@
 ﻿using System;
+using System.Text;
 using System.Threading.Tasks;
 using Discord.WebSocket;
-using SimpleBot.Settings;
-using static SimpleBot.MainBot;
+using RewardBot.Settings;
+using static RewardBot.MainBot;
 
-namespace SimpleBot.DiscordBot.BOT_SlashCommands
+namespace RewardBot.DiscordBot.BOT_SlashCommands
 {
     public static class CommandRan
     {
@@ -24,8 +25,12 @@ namespace SimpleBot.DiscordBot.BOT_SlashCommands
                     await RewardsAvailable(command);
                     break;
                 
+                case "rewards-list":
+                    await RewardsList(command);
+                    break;
+                
                 default:
-                    Log.Warn($"Received unknown command -> {command.CommandName} from {command.User}.");
+                    await Log.Warn($"Received unknown command -> {command.CommandName} from {command.User}.");
                     break;
             }
         }
@@ -70,7 +75,7 @@ namespace SimpleBot.DiscordBot.BOT_SlashCommands
                 DiscordUsername = command.User.Username
             });
             
-            Instance.Save();
+            await Instance.Save();
 
             await command.RespondAsync($"Your link code is {code}. Go into the game and in type the following in chat -> !RewardBot Link {code}", ephemeral:true);
         }
@@ -82,7 +87,7 @@ namespace SimpleBot.DiscordBot.BOT_SlashCommands
                 if (Instance.Config.RegisteredUsers[index].DiscordId == command.User.Id)
                 {
                     Instance.Config.RegisteredUsers.RemoveAt(index);
-                    Instance.Save();
+                    await Instance.Save();
                     await command.RespondAsync("Your information has been removed.");
                     return;
                 }
@@ -102,6 +107,34 @@ namespace SimpleBot.DiscordBot.BOT_SlashCommands
             }
 
             await command.RespondAsync($"You have {payouts} rewards waiting to be claimed in-game.", ephemeral: true);
+        }
+
+        private static async Task RewardsList(SocketSlashCommand command)
+        {
+            StringBuilder rewards = new StringBuilder();
+            rewards.AppendLine("   *** AVAILABLE REWARDS ***");
+            RegisteredUsers user = null;
+            for (int index = Instance.Config.RegisteredUsers.Count - 1; index >= 0; index--)
+            {
+                if (Instance.Config.RegisteredUsers[index].DiscordId != command.User.Id) continue;
+                user = Instance.Config.RegisteredUsers[index];
+                break;
+            }
+
+            if (user == null)
+            {
+                await command.RespondAsync("Unable to locate you in the linked player registry.  Have you registered?");
+                return;
+            }
+            
+            for (int index = Instance.Config.Payouts.Count - 1; index >= 0; index--)
+            {
+                if (Instance.Config.Payouts[index].DiscordId != command.User.Id) continue;
+                Payout reward = Instance.Config.Payouts[index];
+                rewards.AppendLine($"**ID:** {reward.ID}    **Name:**{reward.RewardName}    *Expires in {reward.DaysUntilExpired}*");
+            }
+
+            await command.RespondAsync(rewards.ToString());
         }
     }
     

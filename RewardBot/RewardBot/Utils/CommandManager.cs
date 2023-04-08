@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using Torch.API.Managers;
 using Torch.Commands;
 
-namespace SimpleBot.Utils
+namespace RewardBot.Utils
 {
     public class CommandsManager
     {
@@ -27,10 +27,10 @@ namespace SimpleBot.Utils
                 return;
                 
             if (_manager == null)
-                MainBot.Log.Error($"Command Manager unable to run command [{command}].  Torch has no active command manager.");
+                await MainBot.Log.Error($"Command Manager unable to run command [{command}].  Torch has no active command manager.");
             
             if (!MainBot.Instance.WorldOnline)
-                MainBot.Log.Error($"Command Manager unable to run command [{command}].  The server is offline.");
+                await MainBot.Log.Error($"Command Manager unable to run command [{command}].  The server is offline.");
             
             _manager?.HandleCommandFromServer(command);
         }
@@ -42,10 +42,10 @@ namespace SimpleBot.Utils
             // task in awaitable state, so everything else can still run.
             
             if (await GetTorchCommandManager() == false)
-                MainBot.Log.Error($"Command Manager unable to run (slow) commands.  Torch has no active command manager.");
+                await MainBot.Log.Error($"Command Manager unable to run (slow) commands.  Torch has no active command manager.");
             
             if (!MainBot.Instance.WorldOnline)
-                MainBot.Log.Error($"Command Manager unable to run (slow) command.  The server is offline.");
+                await MainBot.Log.Error($"Command Manager unable to run (slow) command.  The server is offline.");
 
             foreach (string command in commands)
             {

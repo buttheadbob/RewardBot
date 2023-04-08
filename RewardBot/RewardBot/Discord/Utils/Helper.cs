@@ -1,9 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using Discord.WebSocket;
-using static SimpleBot.MainBot;
+using static RewardBot.MainBot;
 
-namespace SimpleBot.DiscordBot.Utils
+namespace RewardBot.DiscordBot.Utils
 {
     public sealed class Helper
     {
@@ -27,12 +27,12 @@ namespace SimpleBot.DiscordBot.Utils
                 if (!commandExist)
                 {
                     await MainBot.DiscordBot.Guilds[0].CreateApplicationCommandAsync(MainBot.DiscordBot.AllCommands[index]);
-                    Log.Info($"Created Command On Discord Server -> {MainBot.DiscordBot.AllCommands[index].Name.ToString()}");
+                    await Log.Info($"Created Command On Discord Server -> {MainBot.DiscordBot.AllCommands[index].Name.ToString()}");
                 }
                 else
                 {
                     // Don't really need this logged but we can still log it silently.
-                    Log.Debug($"Command Already On Discord Server -> {MainBot.DiscordBot.AllCommands[index].Name.ToString()}");
+                    await Log.Debug($"Command Already On Discord Server -> {MainBot.DiscordBot.AllCommands[index].Name.ToString()}");
                 }
             }
         }

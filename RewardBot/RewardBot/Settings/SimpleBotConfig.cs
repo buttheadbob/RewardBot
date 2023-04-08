@@ -1,9 +1,10 @@
 ﻿using AsynchronousObservableConcurrentList;
+using RewardBot.Settings;
 using Torch;
 
-namespace SimpleBot.Settings
+namespace RewardBot.Settings
 {
-    public sealed class SimpleBotConfig : ViewModel
+    public sealed class RewardBotConfig : ViewModel
     {
         // Bot Settings
         private string _botName = "Rewards Bot";
@@ -22,6 +23,8 @@ namespace SimpleBot.Settings
         private string _boostRewardsPayDay = "1"; // Day of the month to run the _BoostRewardsCommand
         private AsynchronousObservableConcurrentList<Reward> _rewardCommands = new AsynchronousObservableConcurrentList<Reward>();
         private AsynchronousObservableConcurrentList<Payout> _payouts = new AsynchronousObservableConcurrentList<Payout>();
+        private int _lastPayoutId = 0;
+        private int _lastRewardId = 1;
 
         public string BotName { get => _botName; set => SetValue(ref _botName, value); }
         public string BotKey { get => _botKey; set => SetValue(ref _botKey, value); }
@@ -35,6 +38,8 @@ namespace SimpleBot.Settings
         public AsynchronousObservableConcurrentList<Reward> Rewards { get => _rewardCommands; set => SetValue(ref _rewardCommands, value); }
         public AsynchronousObservableConcurrentList<Payout> Payouts { get => _payouts; set => SetValue(ref _payouts, value); }
         public BotStatusEnum BotStatus { get => _botStatus; set => SetValue(ref _botStatus, value); } 
+        public int LastPayoutId { get => _lastPayoutId; set => SetValue(ref _lastPayoutId, value); } // Only to be accessed by the ID Manager in Utils.Helper
+        public int LastRewardId { get => _lastRewardId; set => SetValue(ref _lastRewardId, value); } // Only to be accessed by the ID Manager in Utils.Helper
         
         public void SetBotStatus(BotStatusEnum newStatus)
         {

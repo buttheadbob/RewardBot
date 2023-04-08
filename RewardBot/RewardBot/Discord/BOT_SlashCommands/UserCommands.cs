@@ -4,7 +4,7 @@ using Discord;
 using Discord.Net;
 using Discord.WebSocket;
 
-namespace SimpleBot.DiscordBot.BOT_SlashCommands
+namespace RewardBot.DiscordBot.BOT_SlashCommands
 {
     public class GuildCommandBuilder
     {
@@ -31,14 +31,22 @@ namespace SimpleBot.DiscordBot.BOT_SlashCommands
             countRewards.WithName("rewards-available");
             countRewards.WithDescription("Tells you how many rewards you have available.");
             
+            // List All Available Rewards
+            SlashCommandBuilder listRewards = new SlashCommandBuilder();
+            listRewards.WithName("rewards-list");
+            listRewards.WithDescription("List your available rewards.");
+            
             await BuildCommands(boostRewardRegister);
-            MainBot.Log.Info($"Prepairing Command -> {boostRewardRegister.Name}");
+            await MainBot.Log.Info($"Preparing Command -> {boostRewardRegister.Name}");
             
             await BuildCommands(boostRewardUnregister);
-            MainBot.Log.Info($"Prepairing Command -> {boostRewardUnregister.Name}");
+            await MainBot.Log.Info($"Preparing Command -> {boostRewardUnregister.Name}");
 
             await BuildCommands(countRewards);
-            MainBot.Log.Info($"Prepairing Command -> {countRewards.Name}");
+            await MainBot.Log.Info($"Preparing Command -> {countRewards.Name}");
+
+            await BuildCommands(listRewards);
+            await MainBot.Log.Info($"Preparing Command -> {listRewards.Name}");
 
             await MainBot.DiscordBot.HelperUtils.SetGuildCommands();
             return this;
@@ -50,12 +58,11 @@ namespace SimpleBot.DiscordBot.BOT_SlashCommands
             return ret.InitAsync();
         }
 
-        private Task BuildCommands(SlashCommandBuilder command)
+        private async Task BuildCommands(SlashCommandBuilder command)
         {
             try
             {
                 MainBot.DiscordBot.AllCommands.Add(command.Build());
-                //await _guild.CreateApplicationCommandAsync(command.Build());
             }
             catch (HttpException exception)
             {
@@ -80,9 +87,8 @@ namespace SimpleBot.DiscordBot.BOT_SlashCommands
                     }
                 }
 
-                MainBot.Log.Error(exceptionFormatted);
+                await MainBot.Log.Error(exceptionFormatted);
             }
-            return Task.CompletedTask;
         }
     }
 }

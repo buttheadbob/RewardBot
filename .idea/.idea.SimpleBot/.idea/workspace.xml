@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="663b9401-1322-4d35-a800-7175a1bb012a" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/.idea/.idea.RewardBot/.idea/.gitignore" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/.idea.RewardBot/.idea/encodings.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/.idea.RewardBot/.idea/indexLayout.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/.idea.RewardBot/.idea/statistic.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/.idea.RewardBot/.idea/vcs.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/.idea.SimpleBot/.idea/workspace.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/RewardBot/SimpleBot/Utils/Helpers.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/.idea.SimpleBot/.idea/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/.idea.SimpleBot/.idea/encodings.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/.idea.SimpleBot/.idea/indexLayout.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/.idea.SimpleBot/.idea/vcs.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/SimpleBot.sln" beforeDir="false" afterPath="$PROJECT_DIR$/RewardBot.sln" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SimpleBot/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/RewardBot/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SimpleBot/README.txt" beforeDir="false" afterPath="$PROJECT_DIR$/RewardBot/README.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SimpleBot/Setup (run before opening plugin).bat" beforeDir="false" afterPath="$PROJECT_DIR$/RewardBot/Setup (run before opening plugin).bat" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SimpleBot/SimpleBot.csproj" beforeDir="false" afterPath="$PROJECT_DIR$/RewardBot/RewardBot.csproj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SimpleBot/SimpleBot/Discord/BOT.cs" beforeDir="false" afterPath="$PROJECT_DIR$/RewardBot/SimpleBot/Discord/BOT.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SimpleBot/SimpleBot/Discord/BOT_SlashCommands/CommandRan.cs" beforeDir="false" afterPath="$PROJECT_DIR$/RewardBot/SimpleBot/Discord/BOT_SlashCommands/CommandRan.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SimpleBot/SimpleBot/Discord/BOT_SlashCommands/UserCommands.cs" beforeDir="false" afterPath="$PROJECT_DIR$/RewardBot/SimpleBot/Discord/BOT_SlashCommands/UserCommands.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SimpleBot/SimpleBot/Discord/Utils/Helper.cs" beforeDir="false" afterPath="$PROJECT_DIR$/RewardBot/SimpleBot/Discord/Utils/Helper.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SimpleBot/SimpleBot/Discord/Utils/SendDM.cs" beforeDir="false" afterPath="$PROJECT_DIR$/RewardBot/SimpleBot/Discord/Utils/SendDM.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SimpleBot/SimpleBot/InGameCommands/UserCommands.cs" beforeDir="false" afterPath="$PROJECT_DIR$/RewardBot/SimpleBot/InGameCommands/UserCommands.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SimpleBot/SimpleBot/Properties/AssemblyInfo.cs" beforeDir="false" afterPath="$PROJECT_DIR$/RewardBot/SimpleBot/Properties/AssemblyInfo.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SimpleBot/SimpleBot/Properties/Resources.Designer.cs" beforeDir="false" afterPath="$PROJECT_DIR$/RewardBot/SimpleBot/Properties/Resources.Designer.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SimpleBot/SimpleBot/Properties/Resources.resx" beforeDir="false" afterPath="$PROJECT_DIR$/RewardBot/SimpleBot/Properties/Resources.resx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SimpleBot/SimpleBot/Properties/Settings.Designer.cs" beforeDir="false" afterPath="$PROJECT_DIR$/RewardBot/SimpleBot/Properties/Settings.Designer.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SimpleBot/SimpleBot/Properties/Settings.settings" beforeDir="false" afterPath="$PROJECT_DIR$/RewardBot/SimpleBot/Properties/Settings.settings" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SimpleBot/SimpleBot/Settings/Objects.cs" beforeDir="false" afterPath="$PROJECT_DIR$/RewardBot/SimpleBot/Settings/Objects.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SimpleBot/SimpleBot/Settings/SimpleBotConfig.cs" beforeDir="false" afterPath="$PROJECT_DIR$/RewardBot/SimpleBot/Settings/SimpleBotConfig.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SimpleBot/SimpleBot/SimpleBot.cs" beforeDir="false" afterPath="$PROJECT_DIR$/RewardBot/SimpleBot/SimpleBot.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SimpleBot/SimpleBot/UI/SimpleBotControl.xaml" beforeDir="false" afterPath="$PROJECT_DIR$/RewardBot/SimpleBot/UI/SimpleBotControl.xaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SimpleBot/SimpleBot/UI/SimpleBotControl.xaml.cs" beforeDir="false" afterPath="$PROJECT_DIR$/RewardBot/SimpleBot/UI/SimpleBotControl.xaml.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SimpleBot/SimpleBot/Utils/CommandManager.cs" beforeDir="false" afterPath="$PROJECT_DIR$/RewardBot/SimpleBot/Utils/CommandManager.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SimpleBot/SimpleBot/Utils/Helpers.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/SimpleBot/app.config" beforeDir="false" afterPath="$PROJECT_DIR$/RewardBot/app.config" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SimpleBot/manifest.xml" beforeDir="false" afterPath="$PROJECT_DIR$/RewardBot/manifest.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SimpleBot/packages.config" beforeDir="false" afterPath="$PROJECT_DIR$/RewardBot/packages.config" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="HighlightingSettingsPerFile">
+    <setting file="file://$PROJECT_DIR$/RewardBot/SimpleBot/Discord/BOT.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/RewardBot/SimpleBot/Discord/BOT_SlashCommands/CommandRan.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/RewardBot/SimpleBot/Discord/BOT_SlashCommands/UserCommands.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/RewardBot/SimpleBot/Discord/Utils/Helper.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/RewardBot/SimpleBot/Discord/Utils/SendDM.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/RewardBot/SimpleBot/InGameCommands/UserCommands.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/RewardBot/SimpleBot/Properties/AssemblyInfo.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/RewardBot/SimpleBot/Settings/Objects.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/RewardBot/SimpleBot/Settings/SimpleBotConfig.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/RewardBot/SimpleBot/SimpleBot.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/RewardBot/SimpleBot/UI/SimpleBotControl.xaml" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/RewardBot/SimpleBot/UI/SimpleBotControl.xaml.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/RewardBot/SimpleBot/Utils/CommandManager.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/RewardBot/SimpleBot/Utils/Helpers.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$USER_HOME$/RiderProjects/SynchronousObservableConcurrentList/AsynchronousObservableConcurrentList.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/0992d515ad6b46c4913b5a8ce193165a13d9a0/9e/67b761f2/Dispatcher.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/0ab63f321ebd468d99196c868f991b0637bfa0/19/0041d038/RoutedEventArgs.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/0ab63f321ebd468d99196c868f991b0637bfa0/fd/002b37ab/EventRoute.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/38f3335e7e334776b3c928600c54415335df48/be/5d9007c2/Queue`1.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/3f565a2e266a440cbae58636adcf8d3a8a00/6a/e77a67d9/IWpfPlugin.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/4b76c3e709534801a173f34a1d6b3dfc522790/24/a4df42a4/List`1.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/577db654d778479b959f008fece0501a13400/2b/02a85636/TerminalPropertyExtensions.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/5f67a432ce1541f4b275a4c61709c7625b3bb0/ac/e14aca47/DataGridView.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/6dececf2eae64dcdb2323a4828baf6ec35df58/1b/6da7787e/__DynamicallyInvokableAttribute.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/6dececf2eae64dcdb2323a4828baf6ec35df58/b8/024b406c/ObservableCollection`1.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/6dececf2eae64dcdb2323a4828baf6ec35df58/d2/42e71b73/NotifyCollectionChangedAction.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/6dececf2eae64dcdb2323a4828baf6ec35df58/ec/1598840f/ConcurrentBag`1.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/6e88024a2c6a49db9758257aaed92e2383600/3d/58e00d33/MyConcurrentList`1.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/6e88024a2c6a49db9758257aaed92e2383600/9c/ccd1dc58/ConcurrentEnumerator`3.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/6e88024a2c6a49db9758257aaed92e2383600/b0/ff33205c/ObservableCollection`1.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/7019bd7d26744d3999c09220aaeebd094ce00/fa/a144464c/PluginViewModel.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/861e23c672704a4a8eca9c234af0cac552e590/0f/9e35c095/List`1.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/861e23c672704a4a8eca9c234af0cac552e590/6a/0a9dbee3/ExecutionContextSwitcher.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/861e23c672704a4a8eca9c234af0cac552e590/be/2ac086ee/Collection`1.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/89520504235a41e7a424f4e66c487d9b522790/ca/c07356e4/UInt64.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/9119521f631d4f83ad60f8989352a4505fed88/bc/62b5e5ef/XamlReader.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/99d2abb3c7c64525bf69e988b8b69f1e604da0/6b/573697c2/EnumerableCollectionView.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/99d2abb3c7c64525bf69e988b8b69f1e604da0/8b/58386ff6/CollectionView.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/b44a57602e32413eb387699eac931482600790/09/9b01ed07/FrameworkElement.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/cab4cd4941104705846e3433671ecd5052e590/a9/2a28b2de/CallerMemberNameAttribute.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/cab4cd4941104705846e3433671ecd5052e590/dc/f81d9931/String.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/cce2ce8c4acf478184ec2ad1b4b5ec6ec2600/ab/0a16aef6/SlashCommandBuilder.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/cce2ce8c4acf478184ec2ad1b4b5ec6ec2600/c5/e5d7e935/Cacheable`2.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/cce2ce8c4acf478184ec2ad1b4b5ec6ec2600/dd/16ddcf76/IGuildUser.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/cce2ce8c4acf478184ec2ad1b4b5ec6ec2600/de/3b914654/DiscordErrorCode.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/d07dfe1599f64ea3be1cd2087cca4bb1156200/5b/27cbe0f1/BaseDiscordClient.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/e70f0d8a1d4441e3a81f4528c35f4b6b4b600/2c/10485ae7/CommandModule.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/e70f0d8a1d4441e3a81f4528c35f4b6b4b600/60/ee2b94a5/CommandContext.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/e70f0d8a1d4441e3a81f4528c35f4b6b4b600/6f/7e939874/ViewModel.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/e70f0d8a1d4441e3a81f4528c35f4b6b4b600/86/0a2ba105/Persistent`1.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/eb9f75c9ffa040549f1fea1320a5bf6c95800/4d/ef71a54b/Logger.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/eb9f75c9ffa040549f1fea1320a5bf6c95800/e9/601bcfdb/ILoggerExtensions.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/edffeab687a24d8ba7be5b6b72c42c6ec6200/0f/26e8ae0c/SocketCommandBase.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/edffeab687a24d8ba7be5b6b72c42c6ec6200/72/7bb4edf9/ConnectionManager.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/edffeab687a24d8ba7be5b6b72c42c6ec6200/7b/74746779/SocketGuild.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/edffeab687a24d8ba7be5b6b72c42c6ec6200/92/9e7ce3b1/DiscordSocketClient.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/edffeab687a24d8ba7be5b6b72c42c6ec6200/a0/eadb45a2/SocketGuild.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/edffeab687a24d8ba7be5b6b72c42c6ec6200/c4/0ec4cfff/SocketRole.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/edffeab687a24d8ba7be5b6b72c42c6ec6200/c7/0d339813/DiscordSocketClient.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/edffeab687a24d8ba7be5b6b72c42c6ec6200/d7/95b452c0/SocketGuildUser.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/edffeab687a24d8ba7be5b6b72c42c6ec6200/dd/8703d41f/BaseSocketClient.cs" root0="SKIP_HIGHLIGHTING" />
+  </component>
+  <component name="MarkdownSettingsMigration">
+    <option name="stateVersion" value="1" />
+  </component>
+  <component name="MetaFilesCheckinStateConfiguration" checkMetaFiles="true" />
+  <component name="ProblemsViewState">
+    <option name="selectedTabId" value="SWEA" />
+  </component>
+  <component name="ProjectId" id="2NrpNPEAxT4SFYPP2nS2uHzfTUP" />
+  <component name="ProjectLevelVcsManager">
+    <ConfirmationsSetting value="2" id="Add" />
+  </component>
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ASKED_ADD_EXTERNAL_FILES&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
+    &quot;XThreadsFramesViewSplitterKey&quot;: &quot;0.33636364&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;reference.settings.project.statistic.project.settings&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  },
+  &quot;keyToStringList&quot;: {
+    &quot;rider.external.source.directories&quot;: [
+      &quot;D:\\RiderProjects\\config\\resharper-host\\DecompilerCache&quot;,
+      &quot;D:\\RiderProjects\\config\\resharper-host\\SourcesCache&quot;,
+      &quot;C:\\Users\\Robert\\AppData\\Local\\Symbols\\src&quot;
+    ]
+  }
+}</component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="663b9401-1322-4d35-a800-7175a1bb012a" name="Changes" comment="" />
+      <created>1680432015198</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1680432015198</updated>
+      <workItem from="1680432016840" duration="687000" />
+      <workItem from="1680439771269" duration="14187000" />
+      <workItem from="1680459706209" duration="4000" />
+      <workItem from="1680459876447" duration="6000" />
+      <workItem from="1680459913040" duration="17533000" />
+      <workItem from="1680517273992" duration="17223000" />
+      <workItem from="1680537131319" duration="36000" />
+      <workItem from="1680537185979" duration="527000" />
+      <workItem from="1680537849621" duration="25198000" />
+      <workItem from="1680615275342" duration="18277000" />
+      <workItem from="1680637339258" duration="13339000" />
+      <workItem from="1680712286719" duration="24827000" />
+      <workItem from="1680773523497" duration="11239000" />
+      <workItem from="1680794819560" duration="128000" />
+      <workItem from="1680794957488" duration="10874000" />
+      <workItem from="1680805939818" duration="1061000" />
+      <workItem from="1680811957886" duration="13438000" />
+      <workItem from="1680859615328" duration="38056000" />
+      <workItem from="1680917355573" duration="60000" />
+      <workItem from="1680917508845" duration="3123000" />
+    </task>
+    <task id="LOCAL-00001" summary="Removed some server specific stuff, not needed.&#10;Added slash commands.&#10;Added in-game commands.&#10;Payouts are stored until player claims them, with an optional expiry.&#10;GUI updated, spread out across more tabs for less clutter.&#10;more stuff too but... yeah.">
+      <created>1680571185205</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1680571185205</updated>
+    </task>
+    <task id="LOCAL-00002" summary="More GUI changes.&#10;DM function debugged.&#10;Bot Status works as intended.&#10;Slash commands debugged.&#10;&#10;Need to debug in-game parts... &#10;commands, claims, linking, etc.">
+      <created>1680653320665</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1680653320665</updated>
+    </task>
+    <task id="LOCAL-00003" summary="Biggish update.  Removed some custom types because they were not really needed.  Updated the whole payout/reward system.  Can now create many different rewards based on different roles.  Not just rewarding for boosting.  Or... yeah, reward only on boosting if your cheap I guess.  Some multithreading stuff.  Fixed a bug with registered users list not updating on plugin startup.  Implemented a custom bservable concurrent list for all Lists of slight importance or more.">
+      <created>1680828606209</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1680828606209</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="UnityCheckinConfiguration" checkUnsavedScenes="true" />
+  <component name="UnityUnitTestConfiguration" currentTestLauncher="NUnit" />
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
+    <option name="CLEAR_INITIAL_COMMIT_MESSAGE" value="true" />
+    <MESSAGE value="ingame commands, seaching users in GUI, and stuff..." />
+    <MESSAGE value="Removed some server specific stuff, not needed.&#10;Added slash commands.&#10;Added in-game commands.&#10;Payouts are stored until player claims them, with an optional expiry.&#10;GUI updated, spread out across more tabs for less clutter.&#10;more stuff too but... yeah." />
+    <MESSAGE value="More GUI changes.&#10;DM function debugged.&#10;Bot Status works as intended.&#10;Slash commands debugged.&#10;&#10;Need to debug in-game parts... &#10;commands, claims, linking, etc." />
+    <MESSAGE value="Biggish update.  Removed some custom types because they were not really needed.  Updated the whole payout/reward system.  Can now create many different rewards based on different roles.  Not just rewarding for boosting.  Or... yeah, reward only on boosting if your cheap I guess.  Some multithreading stuff.  Fixed a bug with registered users list not updating on plugin startup.  Implemented a custom bservable concurrent list for all Lists of slight importance or more." />
+    <option name="LAST_COMMIT_MESSAGE" value="Biggish update.  Removed some custom types because they were not really needed.  Updated the whole payout/reward system.  Can now create many different rewards based on different roles.  Not just rewarding for boosting.  Or... yeah, reward only on boosting if your cheap I guess.  Some multithreading stuff.  Fixed a bug with registered users list not updating on plugin startup.  Implemented a custom bservable concurrent list for all Lists of slight importance or more." />
+  </component>
+  <component name="XSLT-Support.FileAssociations.UIState">
+    <expand />
+    <select />
+  </component>
+</project>

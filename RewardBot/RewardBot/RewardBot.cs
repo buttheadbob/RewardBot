@@ -1,54 +1,56 @@
 ﻿using NLog;
 using System;
 using System.IO;
+using System.Threading.Tasks;
 using System.Timers;
 using System.Windows.Controls;
 using Discord.WebSocket;
 using AsynchronousObservableConcurrentList;
+using Discord;
 using Torch;
 using Torch.API;
 using Torch.API.Managers;
 using Torch.API.Plugins;
 using Torch.API.Session;
 using Torch.Session;
-using SimpleBot.DiscordBot;
-using SimpleBot.Settings;
-using SimpleBot.UI;
-using SimpleBot.Utils;
+using RewardBot.DiscordBot;
+using RewardBot.Settings;
+using RewardBot.UI;
+using RewardBot.Utils;
 
-namespace SimpleBot
+namespace RewardBot
 {
     public sealed class MainBot : TorchPluginBase, IWpfPlugin
     {
-        private const string ConfigFileName = "SimpleBotConfig.cfg";
-
-        public SimpleBotControl Control;
-        public UserControl GetControl() => Control ?? (Control = new SimpleBotControl());
-
-        private Persistent<SimpleBotConfig> _config;
-        public SimpleBotConfig Config => _config?.Data;
+        private const string ConfigFileName = "RewardsBotConfig.cfg";
+        public RewardBotControl Control;
+        public UserControl GetControl() => Control ?? (Control = new RewardBotControl());
+        private Persistent<RewardBotConfig> _config;
+        public RewardBotConfig Config => _config?.Data;
         public static MainBot Instance;
-        public static readonly Logger Log = LogManager.GetLogger("Discord Reward Bot");
+        private static readonly Logger _log = LogManager.GetLogger("Discord Rewards Bot");
+        public static Log Log = new Log(ref _log);
         public static Bot DiscordBot;
         public AsynchronousObservableConcurrentList<SocketGuildUser> DiscordMembers = new AsynchronousObservableConcurrentList<SocketGuildUser>();
+        public static ID_Manager IdManager = new ID_Manager();
         
         public bool WorldOnline;
         public static readonly CommandsManager CommandsManager = new CommandsManager();
         private Timer _scheduledWork = new Timer();
         
+        
         public override async void Init(ITorchBase torch)
         {
             base.Init(torch);
-
             SetupConfig();
 
             TorchSessionManager sessionManager = Torch.Managers.GetManager<TorchSessionManager>();
             if (sessionManager != null)
                 sessionManager.SessionStateChanged += SessionChanged;
             else
-                Log.Warn("No session manager loaded!");
+                await Log.Warn("No session manager loaded!");
 
-            Save();
+            await Save();
             Instance = this;
             Config.SetBotStatus(BotStatusEnum.Offline);
             _scheduledWork.Interval = TimeSpan.FromMinutes(5).TotalMilliseconds; // Easier than doing math to change :)
@@ -56,7 +58,10 @@ namespace SimpleBot
             _scheduledWork.Start();
             DiscordBot = new Bot();
             if (Config.EnabledOffline)
+            {
                 await DiscordBot.Connect();
+                await DiscordBot.Client.SetStatusAsync(UserStatus.AFK);
+            }
         }
 
         private async void SessionChanged(ITorchSession session, TorchSessionState state)
@@ -64,37 +69,40 @@ namespace SimpleBot
             switch (state)
             {
                 case TorchSessionState.Loaded:
-                    Log.Info("Session Loaded!");
+                    await Log.Info("Session Loaded!");
                     WorldOnline = true;
-                    if (Instance.Config.EnabledOnline && !Instance.Config.IsBotOnline())
+                    if (Config.EnabledOnline && !Instance.Config.IsBotOnline())
                         await DiscordBot.Connect();
                     break;
 
                 case TorchSessionState.Unloading:
                     WorldOnline = false;
-                    Log.Info("Session Unloading!");
-                    await DiscordBot.Disconnect();
+                    await Log.Info("Session Unloading!");
+                    if (!Config.EnabledOffline)
+                        await DiscordBot.Disconnect();
+                    else
+                        await DiscordBot.Client.SetStatusAsync(UserStatus.AFK);
                     break;
             }
         }
 
-        private void SetupConfig()
+        private async void SetupConfig()
         {
             string configFile = Path.Combine(StoragePath, ConfigFileName);
 
             try
             {
-                _config = Persistent<SimpleBotConfig>.Load(configFile);
+                _config = Persistent<RewardBotConfig>.Load(configFile);
             }
             catch (Exception e)
             {
-                Log.Warn(e);
+                await Log.Warn(e.ToString());
             }
 
             if (_config?.Data == null)
             {
-                Log.Info("Create Default Config, because none was found!");
-                _config = new Persistent<SimpleBotConfig>(configFile, new SimpleBotConfig());
+                await Log.Info("Create Default Config, because none was found!");
+                _config = new Persistent<RewardBotConfig>(configFile, new RewardBotConfig());
                 _config.Save();
             }
         }
@@ -110,35 +118,28 @@ namespace SimpleBot
             }
             
             // Check for scheduled payouts
-            string[] paySchedule = Helper.RemoveWhiteSpace(Config.BoostRewardsPayDay).Split(',');
-            foreach (string payDate in paySchedule)
-            {
-                if (!int.TryParse(payDate, out int payDATE)) continue;
-                if (payDATE == DateTime.Now.Day)
-                    await DiscordBot.RewardManager.Payout();
-            }
             
             // Clear expired payouts
             for (int index = Config.Payouts.Count - 1; index >= 0; index--)
             {
                 if (Config.Payouts[index].ExpiryDate < DateTime.Now)
                 {
-                    Log.Info($"Expired payout removed for player {Config.Payouts[index].IngameName}");
+                    await Log.Info($"Expired payout removed for player {Config.Payouts[index].IngameName}");
                     Config.Payouts.RemoveAt(index);
                 }
             }
         }
 
-        public void Save()
+        public async Task Save()
         {
             try
             {
                 _config.Save();
-                Log.Info("Configuration Saved.");
+                await Log.Info("Configuration Saved.");
             }
             catch (IOException e)
             {
-                Log.Warn(e, "Configuration failed to save");
+                await Log.Warn(e.ToString() + "Configuration failed to save");
             }
         }
     }

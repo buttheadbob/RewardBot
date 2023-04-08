@@ -4,11 +4,11 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Windows;
 
-[assembly: AssemblyTitle("SimpleBot")]
+[assembly: AssemblyTitle("RewardBot")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("SimpleBot")]
+[assembly: AssemblyProduct("RewardBot")]
 [assembly: AssemblyCopyright("Copyright SenX 2023")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]

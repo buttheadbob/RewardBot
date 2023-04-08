@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace SimpleBot.Settings
+namespace RewardBot.Settings
 {
     public enum BotStatusEnum { Online, Offline, Connecting, Disconnecting }
 
@@ -24,6 +24,7 @@ namespace SimpleBot.Settings
 
     public sealed class Reward
     {
+        public int ID { get; set; }
         public string Name { get; set; }
         public string Command { get; set; }
         public string CommandRole { get; set; }
@@ -34,6 +35,9 @@ namespace SimpleBot.Settings
 
     public sealed class Payout
     {
+        public int ID { get; set; }
+        public string Name { get; set; }
+        public string RewardName { get; set; }
         public ulong SteamID { get; set; }
         public string IngameName { get; set; }
         public string DiscordName { get; set; }
@@ -42,6 +46,20 @@ namespace SimpleBot.Settings
         public DateTime ExpiryDate { get; set; }
         public ulong DiscordId { get; set; }
         public string DaysUntilExpired => (ExpiryDate - PaymentDate).Days.ToString();
+
+        public bool ChangeDaysUntilExpire(int days, out string error)
+        {
+            error = "";
+            if (days == 0)
+            {
+                error = "Cannot use 0 for expiry value, this would expire now.";
+                return false;
+            }
+            
+            ExpiryDate = DateTime.Now.AddDays(days);
+
+            return true;
+        } 
     }
     
 }

@@ -10,12 +10,12 @@ using System.Windows.Threading;
 using Discord;
 using Discord.WebSocket;
 using AsynchronousObservableConcurrentList;
-using SimpleBot.Settings;
-using static SimpleBot.MainBot;
+using RewardBot.Settings;
+using static RewardBot.MainBot;
 
-namespace SimpleBot.UI
+namespace RewardBot.UI
 {
-    public sealed partial class SimpleBotControl : UserControl
+    public sealed partial class RewardBotControl : UserControl
     {
         public AsynchronousObservableConcurrentList<SocketGuildUser> FilteredDiscordMembers = new AsynchronousObservableConcurrentList<SocketGuildUser>();
         public static object FilteredDiscordMembers_LOCK = new object();
@@ -25,7 +25,7 @@ namespace SimpleBot.UI
         
         private delegate void UpdateUI();
         
-        public SimpleBotControl()
+        public RewardBotControl()
         {
             BindingOperations.EnableCollectionSynchronization(FilteredDiscordMembers , FilteredDiscordMembers_LOCK);
             BindingOperations.EnableCollectionSynchronization(FilteredRegisteredUsers , FilteredRegisteredUsers_LOCK);
@@ -37,7 +37,9 @@ namespace SimpleBot.UI
             FilteredCount.DataContext = this;
             StatusLabel.DataContext = Instance.Config;
             RewardCommandsList.ItemsSource = Instance.Config.Rewards;
-            tbRoleComboBox.ItemsSource = MainBot.DiscordBot.Roles;
+            tbRoleComboBox.DataContext = MainBot.DiscordBot;
+            ForceSelectedPayoutToAll.DataContext = Instance.Config;
+            ForceSelectedPayoutToAll.ItemsSource = Instance.Config.Rewards;
             Instance.DiscordMembers.CollectionChanged += DiscordMembersOnCollectionChanged;
             Instance.Config.RegisteredUsers.CollectionChanged += RegisteredUsersOnCollectionChanged;
             RegisteredUsersOnCollectionChanged(null, null); // This looks dumb but forces the gridview to load all the data on startup and it works.
@@ -66,9 +68,9 @@ namespace SimpleBot.UI
             FilteredCount.Text = FilteredDiscordMembers.Count.ToString() + " / " + Instance.DiscordMembers.Count.ToString();
         }
 
-        private void SaveButton_OnClick(object sender, RoutedEventArgs e)
+        private async void SaveButton_OnClick(object sender, RoutedEventArgs e)
         {
-            Instance.Save();
+            await Instance.Save();
         }
 
         private async void ForceBotOnline_OnClick(object sender, RoutedEventArgs e)
@@ -88,16 +90,16 @@ namespace SimpleBot.UI
             if (Instance.Config.EnabledOnline && MainBot.DiscordBot.Guilds.Count >= 1)
                 await MainBot.DiscordBot.RewardManager.Payout();
             else
-                Log.Warn("Unable to payout rewards.  Bot offline or not in any servers.");
+                await Log.Warn("Unable to payout rewards.  Bot offline or not in any servers.");
         }
 
-        private void RemoveRegisteredMember_OnClick(object sender, RoutedEventArgs e)
+        private async void RemoveRegisteredMember_OnClick(object sender, RoutedEventArgs e)
         {
             if (MessageBox.Show("Are you sure, removing this person cannot be undone!", "Remove Registered User", MessageBoxButton.OKCancel, MessageBoxImage.Warning) == MessageBoxResult.Cancel)
                 return;
             
             Instance.Config.RegisteredUsers.RemoveAt(RegisteredMembersGrid.SelectedIndex);
-            Instance.Save();
+            await Instance.Save();
         }
 
         private void FilterDiscordMembers_OnKeyUp(object sender, KeyEventArgs e)
@@ -177,19 +179,20 @@ namespace SimpleBot.UI
 
         private void RewardCommandsList_OnSelected(object sender, RoutedEventArgs e)
         {
-            Settings.Reward command = RewardCommandsList.SelectedItem as Settings.Reward;
+            Reward command = RewardCommandsList.SelectedItem as Reward;
             ShowCommand.Text = command?.Command;
         }
 
-        private void NewCommand_OnClick(object sender, RoutedEventArgs e)
+        private async void NewCommand_OnClick(object sender, RoutedEventArgs e)
         {
             if (!int.TryParse(Expires.Text, out int expiredInDays))
             {
                 MessageBox.Show("Invalid Entry: Day(s) until expired", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
-            Settings.Reward command = new Settings.Reward
+            Reward reward = new Reward
             {
+                ID = MainBot.IdManager.GetNewRewardID(),
                 Name = NewCommandName.Text,
                 Command = CommandText.Text,
                 CommandRole = tbCommandRole.Text,
@@ -197,23 +200,24 @@ namespace SimpleBot.UI
                 ExpiresInDays = expiredInDays
             };
 
-            Instance.Config.Rewards.Add(command);
+            Instance.Config.Rewards.Add(reward);
             
             StringBuilder logNewCommand = new StringBuilder();
             logNewCommand.AppendLine("New reward command created:");
-            logNewCommand.AppendLine($"Name: {command.Name}");
-            logNewCommand.AppendLine($"Command: {command.Command}");
+            logNewCommand.AppendLine($"ID: {reward.ID}");
+            logNewCommand.AppendLine($"Name: {reward.Name}");
+            logNewCommand.AppendLine($"Command: {reward.Command}");
             logNewCommand.AppendLine("Saving settings...");
-            Instance.Save();
-            Log.Info(logNewCommand);
+            await Instance.Save();
+            await Log.Info(logNewCommand);
         }
 
         private async void ForceBoosterRewardPayoutAll_OnClick(object sender, RoutedEventArgs e)
         {
-            if ( MessageBox.Show("Are you sure you want to run all the reward commands on ALL players, regardless if they have already received their rewards or not?", "CAUTION!!!", MessageBoxButton.OKCancel, MessageBoxImage.Warning) == MessageBoxResult.Cancel) 
+            if ( MessageBox.Show($"Are you sure you want to run the reward command [{Instance.Config.Rewards[ForceSelectedPayoutToAll.SelectedIndex].Name}] on ALL players, regardless if they have already received their rewards or not?  This will not count towards their scheduled reward payments.", "CAUTION!!!", MessageBoxButton.OKCancel, MessageBoxImage.Warning) == MessageBoxResult.Cancel) 
                 return;
             
-            await MainBot.DiscordBot.RewardManager.Payout();
+            await MainBot.DiscordBot.RewardManager.Payout(Instance.Config.Rewards[ForceSelectedPayoutToAll.SelectedIndex].ID, true);
         }
 
         private void Hyperlink_OnRequestNavigate(object sender, RequestNavigateEventArgs e)
@@ -326,18 +330,173 @@ namespace SimpleBot.UI
                 return;
             }
 
+            if (!ulong.TryParse(tbDiscordID.Text, out ulong discordId))
+            {
+                MessageBox.Show("The DiscordID is invalid, try again.  Only numbers are allowed.", "Oopsies!", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
             if (!int.TryParse(tbManualExpires.Text, out int intManualExpires))
             {
                 MessageBox.Show("The expiry is invalid, try again.  Only numbers are allowed.", "Oopsies!", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
-            await MainBot.DiscordBot.RewardManager.ManualPayout(steamId, tbCommand.Text, intManualExpires);
+            if (intManualExpires <= 0)
+            {
+                MessageBox.Show("The expiry is invalid, try again.  Cannot be equal to or less than 0.", "Oopsies!", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            if (intManualExpires > 365)
+            {
+                MessageBox.Show("The expiry is invalid, a payout cannot last longer than 1 year (365 days).", "Even the Matrix has its limitations Mr.Anderson!", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            Payout newPayout = new Payout
+            {
+                ID = MainBot.IdManager.GetNewPayoutID(),
+                Name = "ManualPayout",
+                DiscordName = tbDiscordName.Text,
+                DiscordId = discordId,
+                Command = tbCommand.Text,
+                IngameName = tbInGameName.Text,
+                SteamID = steamId,
+                PaymentDate = DateTime.Now,
+                ExpiryDate = DateTime.Now + TimeSpan.FromDays(intManualExpires)
+            };
+            
+            Instance.Config.Payouts.Add(newPayout);
+            await Instance.Save();
+
+            StringBuilder manualRewardLog = new StringBuilder();
+            manualRewardLog.AppendLine("Manual Reward Issued!!");
+            manualRewardLog.AppendLine($"ID           -> {newPayout.ID}");
+            manualRewardLog.AppendLine($"In-Game Name -> {tbDiscordName.Text}");
+            manualRewardLog.AppendLine($"SteamID      -> {steamId}");
+            manualRewardLog.AppendLine($"Discord Name -> {tbDiscordName.Text}");
+            manualRewardLog.AppendLine($"Discord ID   -> {discordId}");
+            manualRewardLog.AppendLine($"Command      -> {tbCommand.Text}");
+            manualRewardLog.AppendLine($"Expires      -> [{intManualExpires} Days] {newPayout.ExpiryDate}");
+            await Log.Warn(manualRewardLog);
         }
 
-        private void TbRoleComboBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void TbRoleComboBox_OnSelectionChanged(object sender, RoutedEventArgs routedEventArgs)
         {
-            tbCommandRole.Text = ((ComboBox)sender).SelectionBoxItem.ToString();
+            tbCommandRole.Text = ((SocketRole)tbRoleComboBox.SelectedItem).Name;
+        }
+
+        private async void EditPayout_OnClick(object sender, RoutedEventArgs e)
+        {
+            if (!ulong.TryParse(TbEditSteamId.Text, out ulong updatedSteamID))
+            {
+                MessageBox.Show("Check your SteamID value.  Cannot convert.", "Error", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                return;
+            }
+
+            if (!ulong.TryParse(TbEditDiscordID.Text, out ulong updatedDiscordID))
+            {
+                MessageBox.Show("Check your Discord ID value.  Cannot convert.", "Error", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                return;
+            }
+
+            if (!int.TryParse(TbEditExpiry.Text, out int newExpiryInDays))
+            {
+                MessageBox.Show("Check your Days until expired value.  Cannot convert.", "Error", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                return;
+            }
+
+            if (newExpiryInDays <= 0)
+            {
+                MessageBox.Show("The expiry is invalid, try again.  Cannot be equal to or less than 0.", "Error", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                return;
+            }
+            
+            if (newExpiryInDays > 365)
+            {
+                MessageBox.Show("The expiry is invalid, a payout cannot last longer than 1 year (365 days).", "Even the Matrix has its limitations Mr.Anderson!", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            Payout originalReward = Instance.Config.Payouts[PayoutList.SelectedIndex];
+
+            StringBuilder logReport = new StringBuilder();
+            logReport.AppendLine($"Player Reward has been changed!");
+            logReport.AppendLine($" ** Original ** ");
+            logReport.AppendLine($"ID           -> {originalReward.ID}");
+            logReport.AppendLine($"In-Game Name -> {originalReward.IngameName}");
+            logReport.AppendLine($"SteamID      -> {originalReward.SteamID}");
+            logReport.AppendLine($"Discord Name -> {originalReward.DiscordName}");
+            logReport.AppendLine($"Discord ID   -> {originalReward.DiscordId}");
+            logReport.AppendLine($"Expiry       -> [{(originalReward.ExpiryDate - DateTime.Now).Days}]{originalReward.ExpiryDate}");
+            
+            int indexEdit = PayoutList.SelectedIndex;
+            if (!Instance.Config.Payouts[indexEdit].ChangeDaysUntilExpire(newExpiryInDays, out string error))
+            {
+                MessageBox.Show(error, "Error", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                return;
+            }
+            Instance.Config.Payouts[indexEdit].IngameName = TbEditInGameName.Text;
+            Instance.Config.Payouts[indexEdit].SteamID = updatedSteamID;
+            Instance.Config.Payouts[indexEdit].DiscordName = TbEditDiscordName.Text;
+            Instance.Config.Payouts[indexEdit].DiscordId = updatedDiscordID;
+            Instance.Config.Payouts[indexEdit].Command = tbEditCommand.Text;
+            Instance.Config.Payouts[indexEdit].ExpiryDate = DateTime.Now + TimeSpan.FromDays(newExpiryInDays); 
+            
+
+            logReport.AppendLine("");
+            logReport.AppendLine(" ** Updated **");
+            logReport.AppendLine($"ID           -> {originalReward.ID}");
+            logReport.AppendLine($"In-Game Name -> {TbEditInGameName.Text}");
+            logReport.AppendLine($"SteamID      -> {TbEditSteamId.Text}");
+            logReport.AppendLine($"Discord Name -> {TbEditDiscordName.Text}");
+            logReport.AppendLine($"Discord ID   -> {updatedDiscordID}");
+            logReport.AppendLine($"Expiry       -> [{newExpiryInDays} days]{DateTime.Now + TimeSpan.FromDays(newExpiryInDays)}");
+            
+            await Log.Warn(logReport);
+            PayoutList.ItemsSource = null;
+            PayoutList.ItemsSource = Instance.Config.Payouts;
+
+            await Instance.Save();
+        }
+
+        private void PayoutList_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            Payout editPayout = (Payout)PayoutList.SelectedItem;
+            if (editPayout == null) return;
+
+            TbEditInGameName.Text = editPayout.IngameName;
+            TbEditSteamId.Text = editPayout.SteamID.ToString();
+            TbEditDiscordName.Text = editPayout.DiscordName;
+            TbEditDiscordID.Text = editPayout.DiscordId.ToString();
+            tbEditCommand.Text = editPayout.Command;
+            TbEditExpiry.Text = (editPayout.ExpiryDate - DateTime.Now).Days.ToString();
+        }
+
+        private async void DeletePayout_OnClick(object sender, RoutedEventArgs e)
+        {
+            StringBuilder logDeletePayout = new StringBuilder();
+            logDeletePayout.AppendLine("Player Reward Manually Deleted:");
+            logDeletePayout.AppendLine($"In-Game Name -> {Instance.Config.Payouts[PayoutList.SelectedIndex].IngameName}");
+            logDeletePayout.AppendLine($"SteamID      -> {Instance.Config.Payouts[PayoutList.SelectedIndex].SteamID.ToString()}");
+            logDeletePayout.AppendLine($"Discord Name -> {Instance.Config.Payouts[PayoutList.SelectedIndex].DiscordName}");
+            logDeletePayout.AppendLine($"Discord ID   -> {Instance.Config.Payouts[PayoutList.SelectedIndex].DiscordId}");
+            logDeletePayout.AppendLine($"Command      -> {Instance.Config.Payouts[PayoutList.SelectedIndex].Command}");
+            logDeletePayout.AppendLine($"Expires      -> ({ Instance.Config.Payouts[PayoutList.SelectedIndex].DaysUntilExpired.ToString()} days)  {Instance.Config.Payouts[PayoutList.SelectedIndex].ExpiryDate}");
+
+            await Log.Warn(logDeletePayout);
+            Instance.Config.Payouts.RemoveAt(PayoutList.SelectedIndex);
+            await Instance.Save();
+        }
+
+        private async void DeleteSelectedReward_OnClick(object sender, RoutedEventArgs e)
+        {
+            Reward reward = (Reward) RewardCommandsList.SelectedItem;
+            RewardCommandsList.ItemsSource = null;
+            Instance.Config.Rewards.Remove(reward);
+            RewardCommandsList.ItemsSource = Instance.Config.Rewards;
+            await Instance.Save();
         }
     }
 }
