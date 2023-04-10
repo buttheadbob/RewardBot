@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text;
 using Torch.Commands;
 using Torch.Commands.Permissions;
 using RewardBot.Settings;
@@ -54,7 +55,7 @@ namespace RewardBot.Commands
                 Plugin.Config.LinkRequests.Remove(request);
                 await Plugin.Save();
                 
-                Context.Respond($"Your SteamID [{user.IngameSteamId}] has successfully been linked to your Discord account [{user.DiscordUsername}], and are now registered to receive Boost Rewards if your boosting the server!");
+                Context.Respond($"Your SteamID [{user.IngameSteamId}] has successfully been linked to your Discord account [{user.DiscordUsername}], and are now registered to receive rewards!");
                 foundCode = true;
                 break;
             }
@@ -97,7 +98,7 @@ namespace RewardBot.Commands
             }
         }
         
-        [Command("Claim", "Issue any rewards you may have available.")]
+        [Command("Claim", "Issue all rewards you may have available.")]
         [Permission(MyPromoteLevel.None)]
         public async void ClaimRewards()
         {
@@ -107,35 +108,66 @@ namespace RewardBot.Commands
                 return;
             }
 
-            List<string> commands = new List<string>();
-            for (int index = MainBot.Instance.Config.Payouts.Count - 1; index >= 0; index--)
+            int count = 0;
+            for (int claimIndex = Plugin.Config.Payouts.Count - 1; claimIndex >= 0; claimIndex--)
             {
-                if (MainBot.Instance.Config.Payouts[index].SteamID == Context.Player.SteamUserId)
-                {
-                    
-                }
+                if (Plugin.Config.Payouts[claimIndex].SteamID != Context.Player.SteamUserId) continue;
+                Payout payout = Plugin.Config.Payouts[claimIndex];
+                count++;
+                await MainBot.CommandsManager.Run(payout.Command);
+                await Plugin.Control.Dispatcher.BeginInvoke((Action) (() => { Plugin.Config.Payouts.Remove(payout); }));
             }
 
-            if (commands.Count > 0)
+            Context.Respond(count == 0 ? "You have no rewards available to claim at this time." : $"{count} reward(s) have been issued.");
+
+            await Plugin.Save();
+        }
+
+        [Command("Claim Item", "Claim your reward by [ID]")]
+        [Permission(MyPromoteLevel.None)]
+        public async void ClaimItem(int payoutID)
+        {
+            if (Context.Player == null)
             {
-                Context.Respond("You have no rewards to claim at this time.");
+                Context.Respond("This command must be run in game.");
                 return;
+            }
+
+            bool payoutIssued = false;
+            for (int index = Plugin.Config.Payouts.Count - 1; index >= 0; index--)
+            {
+                Payout payout = Plugin.Config.Payouts[index];
+                if (payout.SteamID != Context.Player.SteamUserId) continue;
+                if (payout.ID != payoutID) continue;
+                
+                await MainBot.CommandsManager.Run(payout.Command);
+                await Plugin.Control.Dispatcher.BeginInvoke((Action) (() => { Plugin.Config.Payouts.Remove(payout); })); 
+                payoutIssued = true;
+                break;
             }
             
-            Context.Respond($"You have {commands.Count} rewards being delivered.");
+            Context.Respond(payoutIssued ? "Your reward has been issued." : "No reward with that ID is available to you or no reward with that ID exists.");
+            await Plugin.Save();
+        }
 
-            if (commands.Count > 8)
+        [Command("List", "Show all your rewards available to claim.")]
+        [Permission(MyPromoteLevel.None)]
+        public void ClaimItem()
+        {
+            StringBuilder listRewards = new StringBuilder();
+            listRewards.AppendLine("--- AVAILABLE REWARDS ---");
+            int count = 0;
+            for (int index = Plugin.Config.Payouts.Count - 1; index >= 0; index--)
             {
-                await MainBot.CommandsManager.RunSlow(commands);
-                await Plugin.Save();
-                return;
+                Payout payout = Plugin.Config.Payouts[index];
+                if (payout.SteamID != Context.Player.SteamUserId) continue;
+                count++;
+                listRewards.AppendLine($"[ID: {payout.ID}] [Expires: {payout.ExpiryDate.ToShortDateString()}] [Name: {payout.RewardName}]");
             }
 
-            foreach (string command in commands)
-            {
-                await MainBot.CommandsManager.Run(command);
-                await Plugin.Save();
-            }
+            if (count == 0)
+                listRewards.AppendLine("None...");
+            Context.Respond(listRewards.ToString());
         }
     }
 }

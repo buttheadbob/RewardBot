@@ -1,13 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Timers;
 using System.Windows;
+using Discord;
 using Discord.WebSocket;
 using NLog;
 using RewardBot.Settings;
+using Sandbox.Game.Multiplayer;
+using Sandbox.Game.World;
+using Torch.Mod;
+using Torch.Mod.Messages;
+using VRage.Sync;
 using static RewardBot.MainBot;
 using MessageBox = System.Windows.MessageBox;
 using Timer = System.Timers.Timer;
@@ -93,427 +100,526 @@ namespace RewardBot.Utils
         /// <param name="payAll">False: Only qualifying registered users will receive rewards.  True: ALL registered users will receive rewards.</param>
         public async Task Payout(int rewardID = 0, bool payAll = false)
         {
-            // Make sure user data is up to date!
-            await MainBot.DiscordBot.Guilds[0].DownloadUsersAsync();
-            IReadOnlyCollection<SocketGuildUser> guildUsers = MainBot.DiscordBot.Guilds[0].Users;
-            
-            if (!payAll)
+            if (!Instance.Config.IsBotOnline())
             {
-                for (int rewardIndex = Instance.Config.Rewards.Count - 1; rewardIndex >= 0; rewardIndex--)
-                {
-                    Reward reward = Instance.Config.Rewards[rewardIndex];
-                    for (int userIndex = Instance.Config.RegisteredUsers.Count - 1; userIndex >= 0; userIndex--)
-                    {
-                        RegisteredUsers registeredUser = Instance.Config.RegisteredUsers[userIndex];
-                        if (reward.LastRun.Day == DateTime.Now.Day) continue;
-
-                        foreach (SocketGuildUser socketGuildUser in guildUsers)
-                        {
-                            if (socketGuildUser.Id != registeredUser.DiscordId) continue;
-                            IReadOnlyCollection<SocketRole> roles = socketGuildUser.Roles;
-                            foreach (SocketRole role in roles)
-                            {
-                                if (role.Name != reward.CommandRole) continue;
-                                string[] paydays = reward.DaysToPay.Split(',');
-                                bool paydayToday = false;
-                                for (int i = paydays.Length - 1; i >= 0; i--)
-                                {
-                                    if (paydays[i] == DateTime.Now.Day.ToString())
-                                        paydayToday = true;
-                                }
-                                if (!paydayToday) continue;
-                        
-                                string startCommand = reward.Command.Replace("{SteamID}", registeredUser.IngameSteamId.ToString());
-                                string finishCommand = startCommand.Replace("{Username}", registeredUser.IngameName);
-                                Settings.Payout payout = new Payout()
-                                {
-                                    ID = MainBot.IdManager.GetNewPayoutID(),
-                                    Name = reward.Name,
-                                    IngameName = registeredUser.IngameName,
-                                    SteamID = registeredUser.IngameSteamId,
-                                    PaymentDate = DateTime.Now,
-                                    ExpiryDate = DateTime.Now + TimeSpan.FromDays(reward.ExpiresInDays),
-                                    Command = finishCommand,
-                                    DiscordId = registeredUser.DiscordId,
-                                    DiscordName = registeredUser.DiscordUsername
-                                };
-                                Instance.Config.Payouts.Add(payout);
-                                registeredUser.LastPayout = DateTime.Now;
-                                break;
-                            }
-                        }
-                    }
-                    reward.LastRun = DateTime.Now;
-                }
-                await Instance.Save();
+                await MainBot.Log.Warn("Unable to process rewards while the Discord bot is offline.");
                 return;
             }
             
-            for (int index = Instance.Config.RegisteredUsers.Count - 1; index >= 0; index--)
+            // Grab online players to display announcements.
+            List<MyPlayer> _onlineUsers = new List<MyPlayer>();
+            if(Instance.WorldOnline)
+                _onlineUsers = Sync.Players.GetOnlinePlayers().ToList();
+            
+            Dictionary<ulong, MyPlayer> OnlinePlayers = new Dictionary<ulong, MyPlayer>();
+            foreach (MyPlayer onlineUser in _onlineUsers)
+                OnlinePlayers.Add(onlineUser.Id.SteamId, onlineUser);
+            
+            
+            // Report rewards issued!
+            StringBuilder payoutReport = new StringBuilder();
+            payoutReport.AppendLine("*   Payout Report   *");
+            
+            if (!payAll)
             {
-                RegisteredUsers registeredUser = Instance.Config.RegisteredUsers[index];
+                await MainBot.Log.Info("Processing Rewards.");
+                for (int userIndex = Instance.Config.RegisteredUsers.Count - 1; userIndex >= 0; userIndex--)
+                {
+                    RegisteredUsers registeredUser = Instance.Config.RegisteredUsers[userIndex];
+
+                    // see if member already received scheduled payout for today
+                    if (registeredUser.LastPayout.DayOfYear == DateTime.Now.DayOfYear) continue;
+                    
+                    SocketGuildUser member = MainBot.DiscordBot.Guild.GetUser(Instance.Config.RegisteredUsers[userIndex].DiscordId);
+                    IReadOnlyCollection<SocketRole> memberRoles = member.Roles;
+                    bool registerRewarded = false; // if user received a payout, update their last reward day.
+
+                    int rewardCounter = 0;
+                    for (int rewardIndex = Instance.Config.Rewards.Count - 1; rewardIndex >= 0; rewardIndex--)
+                    {
+                        Reward reward = Instance.Config.Rewards[rewardIndex];
+
+                        // Only pay users with the appropriate role...
+                        foreach (SocketRole memberRole in memberRoles)
+                        {
+                            if (memberRole.Name != reward.CommandRole) continue;
+                            
+                            // Payday!!
+                            string startCommand = reward.Command.Replace("{SteamID}", registeredUser.IngameSteamId.ToString());
+                            string finishCommand = startCommand.Replace("{Username}", registeredUser.IngameName);
+                            Payout payTheMan = new Payout
+                            {
+                                ID = IdManager.GetNewPayoutID(),
+                                DiscordId = member.Id,
+                                DiscordName = member.Username,
+                                IngameName = registeredUser.IngameName,
+                                SteamID = registeredUser.IngameSteamId,
+                                ExpiryDate = DateTime.Now + TimeSpan.FromDays(reward.ExpiresInDays),
+                                RewardName = reward.Name,
+                                PaymentDate = DateTime.Now,
+                                Command = finishCommand
+                            };
+
+                            payoutReport.AppendLine($"ID           -> {payTheMan.ID}");
+                            payoutReport.AppendLine($"Reward Name  -> {payTheMan.RewardName}");
+                            payoutReport.AppendLine($"Discord Name -> {payTheMan.DiscordName}");
+                            payoutReport.AppendLine($"Discord ID   -> {payTheMan.DiscordId}");
+                            payoutReport.AppendLine($"In-Game Name -> {payTheMan.IngameName}");
+                            payoutReport.AppendLine($"SteamID      -> {payTheMan.SteamID}");
+                            payoutReport.AppendLine($"Command      -> {payTheMan.Command}");
+                            payoutReport.AppendLine($"Expires      -> [{payTheMan.DaysUntilExpired} days] {payTheMan.ExpiryDate.ToShortDateString()}");
+                            payoutReport.AppendLine("--------------------------------------------------");
+
+                            rewardCounter++;
+                            Instance.Config.Payouts.Add(payTheMan);
+                            registerRewarded = true;
+                            break;
+                        }
+                    }
+
+                    if (!registerRewarded) continue;
+                    
+                    registeredUser.LastPayout = DateTime.Now;
+                    if (OnlinePlayers.ContainsKey(registeredUser.IngameSteamId))
+                    {
+                        // Announce to player in game.
+                        ModCommunication.SendMessageTo(new DialogMessage($"Reward Bot", null, null, $"You have {rewardCounter} new reward(s) to claim", "Understood!"), registeredUser.IngameSteamId);
+                    }
+                    else
+                    {
+                        if (!Instance.Config.IsBotOnline()) continue;
+                        // Announce to player on discord.
+                        IUser user = await MainBot.DiscordBot.Client.GetUserAsync(registeredUser.DiscordId);
+                        try
+                        {
+                            await user.SendMessageAsync($"You have {rewardCounter} new reward(s) to claim.");
+                        }
+                        catch (Exception e)
+                        {
+                            await MainBot.Log.Warn(e.ToString());
+                        }
+                    }
+                }
+
+                await Instance.Save();
+                await MainBot.Log.Info(payoutReport);
+                return;
+            }
+            
+            // PAY ALL!!!
+            if (rewardID == 0) // ID start at 1 on purpose, no selection sends 0 as default.
+            {
+                MessageBox.Show("An attempt to force-pay all members a reward has failed, invalid reward selected.","Error",MessageBoxButton.OK,MessageBoxImage.Information);
+                return;
+            }
+            payoutReport.AppendLine("** THIS IS A PAYALL REQUEST **");
+
+            for (int userIndex = Instance.Config.RegisteredUsers.Count - 1; userIndex >= 0; userIndex--)
+            {
+                if (!Instance.Config.IsBotOnline())
+                {
+                    await MainBot.Log.Warn("Unable to process rewards while the Discord bot is offline.");
+                    return;
+                }
+                RegisteredUsers registeredUser = Instance.Config.RegisteredUsers[userIndex];
+                if (registeredUser == null || registeredUser.DiscordId == 0) continue;
+                SocketGuildUser member = MainBot.DiscordBot.Guild.GetUser(registeredUser.DiscordId);
+                IReadOnlyCollection<SocketRole> memberRoles = member.Roles;
+                int rewardCounter = 0;
 
                 for (int rewardIndex = Instance.Config.Rewards.Count - 1; rewardIndex >= 0; rewardIndex--)
                 {
                     Reward reward = Instance.Config.Rewards[rewardIndex];
                     
-                    foreach (SocketGuildUser socketGuildUser in guildUsers)
+                    // Only pay users with the appropriate role...
+                    foreach (SocketRole memberRole in memberRoles)
                     {
-                        if (socketGuildUser.Id != registeredUser.DiscordId) continue;
-                        IReadOnlyCollection<SocketRole> roles = socketGuildUser.Roles;
-                        foreach (SocketRole role in roles)
+                        if (memberRole.Name != reward.CommandRole) continue;
+                        // Payday!!
+                        string startCommand = reward.Command.Replace("{SteamID}", registeredUser.IngameSteamId.ToString());
+                        string finishCommand = startCommand.Replace("{Username}", registeredUser.IngameName);
+                        Payout payTheMan = new Payout
                         {
-                            if (role.Name != reward.CommandRole) continue;
-                            string startCommand = reward.Command.Replace("{SteamID}", registeredUser.IngameSteamId.ToString());
-                            string finishCommand = startCommand.Replace("{Username}", registeredUser.IngameName);
-                            Payout payout = new Payout()
-                            {
-                                ID = IdManager.GetNewPayoutID(),
-                                Name = reward.Name,
-                                IngameName = registeredUser.IngameName,
-                                SteamID = registeredUser.IngameSteamId,
-                                PaymentDate = DateTime.Now,
-                                ExpiryDate = DateTime.Now + TimeSpan.FromDays(reward.ExpiresInDays),
-                                Command = finishCommand,
-                                DiscordId = registeredUser.DiscordId,
-                                DiscordName = registeredUser.DiscordUsername
-                            };
-                            Instance.Config.Payouts.Add(payout);
-                            StringBuilder logReward = new StringBuilder();
-                            logReward.AppendLine("REWARD ISSUED!");
-                            logReward.AppendLine($"ID           -> {payout.ID}");
-                            logReward.AppendLine($"Reward       -> {payout.Name}");
-                            logReward.AppendLine($"In-Game Name -> {payout.IngameName}");
-                            logReward.AppendLine($"SteamID      -> {payout.SteamID}");
-                            logReward.AppendLine($"Discord Name -> {payout.DiscordName}");
-                            logReward.AppendLine($"Command      -> {payout.Command}");
-                            logReward.AppendLine($"Expires      -> [{payout.DaysUntilExpired} days]  {payout.ExpiryDate}");
-                            logReward.AppendLine($"---------------------------------------");
-                            await MainBot.Log.Warn(logReward);
-                        }
+                            ID = IdManager.GetNewPayoutID(),
+                            DiscordId = member.Id,
+                            DiscordName = member.Username,
+                            IngameName = registeredUser.IngameName,
+                            SteamID = registeredUser.IngameSteamId,
+                            ExpiryDate = DateTime.Now + TimeSpan.FromDays(reward.ExpiresInDays),
+                            RewardName = reward.Name,
+                            PaymentDate = DateTime.Now,
+                            Command = finishCommand
+                        };
+                            
+                        payoutReport.AppendLine($"ID           -> {payTheMan.ID}");
+                        payoutReport.AppendLine($"Reward Name  -> {payTheMan.RewardName}");
+                        payoutReport.AppendLine($"Discord Name -> {payTheMan.DiscordName}");
+                        payoutReport.AppendLine($"Discord ID   -> {payTheMan.DiscordId}");
+                        payoutReport.AppendLine($"In-Game Name -> {payTheMan.IngameName}");
+                        payoutReport.AppendLine($"SteamID      -> {payTheMan.SteamID}");
+                        payoutReport.AppendLine($"Command      -> {payTheMan.Command}");
+                        payoutReport.AppendLine($"Expires      -> [{payTheMan.DaysUntilExpired} days] {payTheMan.ExpiryDate.ToShortDateString()}");
+                        payoutReport.AppendLine($"--------------------------------------------------");
+
+                        Instance.Config.Payouts.Add(payTheMan);
+                        rewardCounter++;
                     }
                 }
-
+                if (rewardCounter == 0) continue;
+                
+                if (OnlinePlayers.ContainsKey(registeredUser.IngameSteamId))
+                {
+                    // Announce to player in game.
+                    ModCommunication.SendMessageTo(new DialogMessage($"Reward Bot", null, null, $"You have {rewardCounter} new reward(s) to claim", "Understood!"), registeredUser.IngameSteamId);
+                }
+                else
+                {
+                    if (!Instance.Config.IsBotOnline()) continue;
+                    // Announce to player on discord.
+                    IUser user = await MainBot.DiscordBot.Client.GetUserAsync(registeredUser.DiscordId);
+                    try
+                    {
+                        await user.SendMessageAsync($"You have {rewardCounter} new reward(s) to claim.");
+                    }
+                    catch (Exception e)
+                    {
+                        await MainBot.Log.Warn(e.ToString());
+                    }
+                }
+                
             }
+
             await Instance.Save();
+            await MainBot.Log.Warn(payoutReport);
         }
 
-        public async Task ManualPayout(ulong steamId, string command, int expiresInDays)
+        public async Task ManualPayout
+            (
+                ulong discordID,
+                string discordName,
+                string inGameName,
+                ulong steamID,
+                string command,
+                int expiresInDays
+            )
         {
-            bool foundUser = false;
-            for (int i = Instance.Config.RegisteredUsers.Count - 1; i >= 0; i--)
+            StringBuilder payoutReport = new StringBuilder();
+            payoutReport.AppendLine("*   Manual Payout Created   *");
+            
+            string startCommand = command.Replace("{SteamID}", steamID.ToString());
+            string finishCommand = startCommand.Replace("{Username}", inGameName);
+            Payout payTheMan = new Payout
             {
-                if (Instance.Config.RegisteredUsers[i].IngameSteamId != steamId) continue;
+                ID = IdManager.GetNewPayoutID(),
+                DiscordId = discordID,
+                DiscordName = discordName,
+                IngameName = inGameName,
+                SteamID = steamID,
+                ExpiryDate = DateTime.Now + TimeSpan.FromDays(expiresInDays),
+                RewardName = "Manual Reward",
+                PaymentDate = DateTime.Now,
+                Command = finishCommand
+            };
+            
+            payoutReport.AppendLine($"ID           -> {payTheMan.ID}");
+            payoutReport.AppendLine($"Reward Name  -> {payTheMan.RewardName}");
+            payoutReport.AppendLine($"Discord Name -> {payTheMan.DiscordName}");
+            payoutReport.AppendLine($"Discord ID   -> {payTheMan.DiscordId}");
+            payoutReport.AppendLine($"In-Game Name -> {payTheMan.IngameName}");
+            payoutReport.AppendLine($"SteamID      -> {payTheMan.SteamID}");
+            payoutReport.AppendLine($"Command      -> {payTheMan.Command}");
+            payoutReport.AppendLine($"Expires      -> [{payTheMan.DaysUntilExpired} days] {payTheMan.ExpiryDate.ToShortDateString()}");
+            payoutReport.AppendLine($"--------------------------------------------------");
 
-                foundUser = true;
-                string startCommand = command.Replace("{Username}", Instance.Config.RegisteredUsers[i].IngameName);
-                string finishCommand = startCommand.Replace("{SteamID}", steamId.ToString());
-                Payout manualReward = new Payout()
-                {
-                    SteamID = steamId,
-                    DiscordId = Instance.Config.RegisteredUsers[i].DiscordId,
-                    DiscordName = Instance.Config.RegisteredUsers[i].DiscordUsername,
-                    IngameName = Instance.Config.RegisteredUsers[i].IngameName,
-                    ExpiryDate = DateTime.Now + TimeSpan.FromDays(expiresInDays),
-                    Command = finishCommand
-                };
-                
-                Instance.Config.Payouts.Add(manualReward);
-                await Instance.Save();
-
-            }
-
-            if (!foundUser)
-                MessageBox.Show($"Unable to locate a registered user with SteamID {steamId}.", "Check Your SteamID",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
+            await MainBot.Log.Warn(payoutReport);
+            Instance.Config.Payouts.Add(payTheMan);
+            await Instance.Save();
         }
     }
     
     /// <summary>
-        /// NLog manager for asynchronous, thread safe logging.  This works on an user set timed queued system to write logs. 
+    /// NLog manager for asynchronous logging.  This works on a set timed queued system to write logs. 
+    /// </summary>
+    public sealed class Log : IDisposable
+    {
+        private static Logger _log;
+        private static readonly Timer AsyncBatchProcess = new Timer();
+        private static Queue<Tuple<string,string, DateTime>> _queue = new Queue<Tuple<string, string, DateTime>>();
+        private static readonly object QueueLock = new object();
+
+        /// <summary>
+        /// Created a log safely and allows fast burst of application logging without system bog.
         /// </summary>
-        public sealed class Log : IDisposable
+        /// <param name="logger">OPTIONAL: Pass in an existing Nlog instance to be used instead.</param>
+        public Log(ref Logger logger)
         {
-            private static Logger _log;
-            private static readonly Timer AsyncBatchProcess = new Timer();
-            private static Queue<Tuple<string,string, DateTime>> _queue = new Queue<Tuple<string, string, DateTime>>();
-            private static readonly object QueueLock = new object();
-
-            /// <summary>
-            /// Created a log safely and allows fast burst of application logging without system bog.
-            /// </summary>
-            /// <param name="logger">OPTIONAL: Pass in an existing Nlog instance to be used instead.</param>
-            public Log(ref Logger logger)
-            {
-                _log = logger;
-                
-                AsyncBatchProcess.Interval = 5000;
-                AsyncBatchProcess.Elapsed += AsyncBatchProcessOnElapsed;
-                AsyncBatchProcess.Enabled = true;
-                AsyncBatchProcess.Start();
-            }
-
-            /// <summary>
-            /// Pause writing the queue to log file.  Useful if you know you will write a large amount of data in a very short period of time.
-            /// </summary>
-            /// <param name="wait">Time in seconds, of type double.</param>
-            public Task Pause(int wait)
-            {
-                Stopwatch waiter = new Stopwatch();
-                AsyncBatchProcess.Stop();
-                waiter.Start();
-                while (waiter.Elapsed.Seconds < wait)
-                {
-                    
-                }
-                AsyncBatchProcess.Start();
-                return Task.CompletedTask;
-            }
-
-            /// <summary>
-            /// Stops writing the queued logs to file.  Useful if you want to write a large amount of data and reactivate log after.
-            /// </summary>
-            public void Stop()
-            {
-                AsyncBatchProcess.Stop();
-            }
-
-            /// <summary>
-            /// Starts writing the queued logs to file.  This is by default already started.
-            /// </summary>
-            public void Start()
-            {
-                AsyncBatchProcess.Start();
-            }
-
-            /// <summary>
-            /// Forces all queued logs to be written synchronously.
-            /// </summary>
-            public  void Flush()
-            {
-                ClearQueue();
-            }
-
-            /// <summary>
-            ///  Forces all queued logs to be written asynchronously.  Does not require await.
-            /// </summary>
-            public async Task FlushAsync()
-            {
-                await ClearQueue();
-            }
+            _log = logger;
             
-            /// <summary>
-            /// Controls how frequently the queue system will write to the log.
-            /// </summary>
-            /// <param name="interval">Default is 5000 (5 seconds).  Accepts 'double' value.</param>
-            public void SetQueueRate(double interval) { AsyncBatchProcess.Interval = interval; }
-
-            private async void AsyncBatchProcessOnElapsed(object sender, ElapsedEventArgs e)
-            {
-                await ClearQueue();
-            }
-
-            private Task ClearQueue()
-            {
-                lock (QueueLock)
-                {
-                    int _processed = 0;
-                    while (_queue.Count > 0)
-                    {
-                        _processed++;
-                        Tuple<string, string, DateTime> value = _queue.Dequeue();
-                        switch (value.Item1)
-                        {
-                            case "Info":
-                                _log.Info($"{value.Item3.Hour:D2}.{value.Item3.Minute:D2}.{value.Item3.Second}.{value.Item3.Millisecond}    {value.Item2}");
-                                break;
-                            case "Debug":
-                                _log.Debug($"{value.Item3.Hour:D2}.{value.Item3.Minute:D2}.{value.Item3.Second}.{value.Item3.Millisecond}    {value.Item2}");
-                                break;
-                            case "Warn":
-                                _log.Warn($"{value.Item3.Hour:D2}.{value.Item3.Minute:D2}.{value.Item3.Second}.{value.Item3.Millisecond}    {value.Item2}");
-                                break;
-                            case "Error":
-                                _log.Error($"{value.Item3.Hour:D2}.{value.Item3.Minute:D2}.{value.Item3.Second}.{value.Item3.Millisecond}    {value.Item2}");
-                                break;
-                            case "Trace":
-                                _log.Trace($"{value.Item3.Hour:D2}.{value.Item3.Minute:D2}.{value.Item3.Second}.{value.Item3.Millisecond}    {value.Item2}");
-                                break;
-                            case "Fatal":
-                                _log.Fatal($"{value.Item3.Hour:D2}.{value.Item3.Minute:D2}.{value.Item3.Second}.{value.Item3.Millisecond}    {value.Item2}");
-                                break;
-                            default:
-                                _log.Error($"{value.Item3.Hour:D2}.{value.Item3.Minute:D2}.{value.Item3.Second}.{value.Item3.Millisecond}    {value.Item2}");
-                                break;
-                        }
-
-                        if (_processed >= 50)
-                        {
-                            _log.Warn("Excessive Logging Detected.... Waiting.");
-                            break; // Prevents long queue spams from killing torch.
-                        }
-                              
-                    }
-                }
-                return Task.CompletedTask;
-            }
-          
-            private Task _info(string value)
-            {
-                lock (QueueLock)
-                {
-                    _queue.Enqueue(new Tuple<string, string, DateTime>("Info",value,DateTime.Now));
-                }
-                return Task.CompletedTask;
-            }
-            private Task _debug(string value)
-            {
-                lock (QueueLock)
-                {
-                    _queue.Enqueue(new Tuple<string, string, DateTime>("Info",value,DateTime.Now));
-                }
-                return Task.CompletedTask;
-            }
-            private Task _warn(string value)
-            {
-                lock (QueueLock)
-                {
-                    _queue.Enqueue(new Tuple<string, string, DateTime>("Info",value,DateTime.Now));
-                }
-                return Task.CompletedTask;
-            }
-            private Task _error(string value)
-            {
-                lock (QueueLock)
-                {
-                    _queue.Enqueue(new Tuple<string, string, DateTime>("Info",value,DateTime.Now));
-                }
-                _log.Error(value);
-                return Task.CompletedTask;
-            }
-            private Task _trace(string value)
-            {
-                lock (QueueLock)
-                {
-                    _queue.Enqueue(new Tuple<string, string, DateTime>("Info",value,DateTime.Now));
-                }
-                return Task.CompletedTask;
-            }
-            private Task _fatal(string value)
-            {
-                lock (QueueLock)
-                {
-                    _queue.Enqueue(new Tuple<string, string, DateTime>("Info",value,DateTime.Now));
-                }
-                return Task.CompletedTask;
-            }
-
-            /// <summary>
-            /// Writes the diagnostic message and exception at the Info level.
-            /// </summary>
-            /// <param name="message">String format</param>
-            public async Task Info(string message)
-            {
-                await _info(message);
-            }
-            /// <summary>
-            /// Writes the diagnostic message and exception at the Info level.
-            /// </summary>
-            /// <param name="message">StringBuilder format</param>
-            public async Task Info(StringBuilder message)
-            {
-                await _info(message.ToString());
-            }
-            /// <summary>
-            /// Writes the diagnostic message and exception at the Debug level.
-            /// </summary>
-            /// <param name="message">String format</param>
-            public async Task Debug(string message)
-            {
-                await _debug(message);
-            }
-            /// <summary>
-            /// Writes the diagnostic message and exception at the Debug level.
-            /// </summary>
-            /// <param name="message">StringBuilder format</param>
-            public async Task Debug(StringBuilder message)
-            {
-                await _debug(message.ToString());
-            }
-            /// <summary>
-            /// Writes the diagnostic message and exception at the Warn level.
-            /// </summary>
-            /// <param name="message">String format</param>
-            public async Task Warn(string message)
-            {
-                await _warn(message);
-            }
-            /// <summary>
-            /// Writes the diagnostic message and exception at the Warn level.
-            /// </summary>
-            /// <param name="message">StringBuilder format</param>
-            public async Task Warn(StringBuilder message)
-            {
-                await _warn(message.ToString());
-            }
-            /// <summary>
-            /// Writes the diagnostic message and exception at the Error level.
-            /// </summary>
-            /// <param name="message">String format</param>
-            public async Task Error(string message)
-            {
-                await _error(message);
-            }
-            /// <summary>
-            /// Writes the diagnostic message and exception at the Error level.
-            /// </summary>
-            /// <param name="message">StringBuilder format</param>
-            public async Task Error(StringBuilder message)
-            {
-                await _error(message.ToString());
-            }
-            /// <summary>
-            /// Writes the diagnostic message and exception at the Trace level.
-            /// </summary>
-            /// <param name="message">String format</param>
-            public async Task Trace(string message)
-            {
-                await _trace(message);
-            }
-            /// <summary>
-            /// Writes the diagnostic message and exception at the Trace level.
-            /// </summary>
-            /// <param name="message">StringBuilder format</param>
-            public async Task Trace(StringBuilder message)
-            {
-                await _trace(message.ToString());
-            }
-            /// <summary>
-            /// Writes the diagnostic message and exception at the Fatal level.
-            /// </summary>
-            /// <param name="message">String format</param>
-            public async Task Fatal(string message)
-            {
-                await _fatal(message);
-            }
-            /// <summary>
-            /// Writes the diagnostic message and exception at the Fatal level.
-            /// </summary>
-            /// <param name="message">StringBuilder format</param>
-            public async Task Fatal(StringBuilder message)
-            {
-                await _fatal(message.ToString());
-            }
-            /// <summary>
-            /// Disposes of all disposable items. 
-            /// </summary>
-            public void Dispose()
-            {
-                AsyncBatchProcess.Stop();
-                AsyncBatchProcess.Elapsed -= AsyncBatchProcessOnElapsed;
-                AsyncBatchProcess.Dispose();
-            }
+            AsyncBatchProcess.Interval = 5000;
+            AsyncBatchProcess.Elapsed += AsyncBatchProcessOnElapsed;
+            AsyncBatchProcess.Enabled = true;
+            AsyncBatchProcess.Start();
         }
 
-    
+        /// <summary>
+        /// Pause writing the queue to log file.  Useful if you know you will write a large amount of data in a very short period of time.
+        /// </summary>
+        /// <param name="wait">Time in seconds, of type double.</param>
+        public Task Pause(int wait)
+        {
+            Stopwatch waiter = new Stopwatch();
+            AsyncBatchProcess.Stop();
+            waiter.Start();
+            while (waiter.Elapsed.Seconds < wait)
+            {
+                
+            }
+            AsyncBatchProcess.Start();
+            return Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// Stops writing the queued logs to file.  Useful if you want to write a large amount of data and reactivate log after.
+        /// </summary>
+        public void Stop()
+        {
+            AsyncBatchProcess.Stop();
+        }
+
+        /// <summary>
+        /// Starts writing the queued logs to file.  This is by default already started.
+        /// </summary>
+        public void Start()
+        {
+            AsyncBatchProcess.Start();
+        }
+
+        /// <summary>
+        /// Forces all queued logs to be written synchronously.
+        /// </summary>
+        public  void Flush()
+        {
+            ClearQueue();
+        }
+
+        /// <summary>
+        ///  Forces all queued logs to be written asynchronously.  Does not require await.
+        /// </summary>
+        public async Task FlushAsync()
+        {
+            await ClearQueue();
+        }
+        
+        /// <summary>
+        /// Controls how frequently the queue system will write to the log.
+        /// </summary>
+        /// <param name="interval">Default is 5000 (5 seconds).  Accepts 'double' value.</param>
+        public void SetQueueRate(double interval) { AsyncBatchProcess.Interval = interval; }
+
+        private async void AsyncBatchProcessOnElapsed(object sender, ElapsedEventArgs e)
+        {
+            await ClearQueue();
+        }
+
+        private Task ClearQueue()
+        {
+            lock (QueueLock)
+            {
+                int _processed = 0;
+                while (_queue.Count > 0)
+                {
+                    _processed++;
+                    Tuple<string, string, DateTime> value = _queue.Dequeue();
+                    switch (value.Item1)
+                    {
+                        case "Info":
+                            _log.Info($"{value.Item3.Hour:D2}.{value.Item3.Minute:D2}.{value.Item3.Second}.{value.Item3.Millisecond}    {value.Item2}");
+                            break;
+                        case "Debug":
+                            _log.Debug($"{value.Item3.Hour:D2}.{value.Item3.Minute:D2}.{value.Item3.Second}.{value.Item3.Millisecond}    {value.Item2}");
+                            break;
+                        case "Warn":
+                            _log.Warn($"{value.Item3.Hour:D2}.{value.Item3.Minute:D2}.{value.Item3.Second}.{value.Item3.Millisecond}    {value.Item2}");
+                            break;
+                        case "Error":
+                            _log.Error($"{value.Item3.Hour:D2}.{value.Item3.Minute:D2}.{value.Item3.Second}.{value.Item3.Millisecond}    {value.Item2}");
+                            break;
+                        case "Trace":
+                            _log.Trace($"{value.Item3.Hour:D2}.{value.Item3.Minute:D2}.{value.Item3.Second}.{value.Item3.Millisecond}    {value.Item2}");
+                            break;
+                        case "Fatal":
+                            _log.Fatal($"{value.Item3.Hour:D2}.{value.Item3.Minute:D2}.{value.Item3.Second}.{value.Item3.Millisecond}    {value.Item2}");
+                            break;
+                        default:
+                            _log.Error($"{value.Item3.Hour:D2}.{value.Item3.Minute:D2}.{value.Item3.Second}.{value.Item3.Millisecond}    {value.Item2}");
+                            break;
+                    }
+
+                    if (_processed >= 50)
+                    {
+                        _log.Warn("Excessive Logging Detected.... Waiting.");
+                        break; // Prevents long queue spams from killing torch.
+                    }
+                          
+                }
+            }
+            return Task.CompletedTask;
+        }
+      
+        private Task _info(string value)
+        {
+            lock (QueueLock)
+            {
+                _queue.Enqueue(new Tuple<string, string, DateTime>("Info",value,DateTime.Now));
+            }
+            return Task.CompletedTask;
+        }
+        private Task _debug(string value)
+        {
+            lock (QueueLock)
+            {
+                _queue.Enqueue(new Tuple<string, string, DateTime>("Info",value,DateTime.Now));
+            }
+            return Task.CompletedTask;
+        }
+        private Task _warn(string value)
+        {
+            lock (QueueLock)
+            {
+                _queue.Enqueue(new Tuple<string, string, DateTime>("Info",value,DateTime.Now));
+            }
+            return Task.CompletedTask;
+        }
+        private Task _error(string value)
+        {
+            lock (QueueLock)
+            {
+                _queue.Enqueue(new Tuple<string, string, DateTime>("Info",value,DateTime.Now));
+            }
+            _log.Error(value);
+            return Task.CompletedTask;
+        }
+        private Task _trace(string value)
+        {
+            lock (QueueLock)
+            {
+                _queue.Enqueue(new Tuple<string, string, DateTime>("Info",value,DateTime.Now));
+            }
+            return Task.CompletedTask;
+        }
+        private Task _fatal(string value)
+        {
+            lock (QueueLock)
+            {
+                _queue.Enqueue(new Tuple<string, string, DateTime>("Info",value,DateTime.Now));
+            }
+            return Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// Writes the diagnostic message and exception at the Info level.
+        /// </summary>
+        /// <param name="message">String format</param>
+        public async Task Info(string message)
+        {
+            await _info(message);
+        }
+        /// <summary>
+        /// Writes the diagnostic message and exception at the Info level.
+        /// </summary>
+        /// <param name="message">StringBuilder format</param>
+        public async Task Info(StringBuilder message)
+        {
+            await _info(message.ToString());
+        }
+        /// <summary>
+        /// Writes the diagnostic message and exception at the Debug level.
+        /// </summary>
+        /// <param name="message">String format</param>
+        public async Task Debug(string message)
+        {
+            await _debug(message);
+        }
+        /// <summary>
+        /// Writes the diagnostic message and exception at the Debug level.
+        /// </summary>
+        /// <param name="message">StringBuilder format</param>
+        public async Task Debug(StringBuilder message)
+        {
+            await _debug(message.ToString());
+        }
+        /// <summary>
+        /// Writes the diagnostic message and exception at the Warn level.
+        /// </summary>
+        /// <param name="message">String format</param>
+        public async Task Warn(string message)
+        {
+            await _warn(message);
+        }
+        /// <summary>
+        /// Writes the diagnostic message and exception at the Warn level.
+        /// </summary>
+        /// <param name="message">StringBuilder format</param>
+        public async Task Warn(StringBuilder message)
+        {
+            await _warn(message.ToString());
+        }
+        /// <summary>
+        /// Writes the diagnostic message and exception at the Error level.
+        /// </summary>
+        /// <param name="message">String format</param>
+        public async Task Error(string message)
+        {
+            await _error(message);
+        }
+        /// <summary>
+        /// Writes the diagnostic message and exception at the Error level.
+        /// </summary>
+        /// <param name="message">StringBuilder format</param>
+        public async Task Error(StringBuilder message)
+        {
+            await _error(message.ToString());
+        }
+        /// <summary>
+        /// Writes the diagnostic message and exception at the Trace level.
+        /// </summary>
+        /// <param name="message">String format</param>
+        public async Task Trace(string message)
+        {
+            await _trace(message);
+        }
+        /// <summary>
+        /// Writes the diagnostic message and exception at the Trace level.
+        /// </summary>
+        /// <param name="message">StringBuilder format</param>
+        public async Task Trace(StringBuilder message)
+        {
+            await _trace(message.ToString());
+        }
+        /// <summary>
+        /// Writes the diagnostic message and exception at the Fatal level.
+        /// </summary>
+        /// <param name="message">String format</param>
+        public async Task Fatal(string message)
+        {
+            await _fatal(message);
+        }
+        /// <summary>
+        /// Writes the diagnostic message and exception at the Fatal level.
+        /// </summary>
+        /// <param name="message">StringBuilder format</param>
+        public async Task Fatal(StringBuilder message)
+        {
+            await _fatal(message.ToString());
+        }
+        /// <summary>
+        /// Disposes of all disposable items. 
+        /// </summary>
+        public void Dispose()
+        {
+            AsyncBatchProcess.Stop();
+            AsyncBatchProcess.Elapsed -= AsyncBatchProcessOnElapsed;
+            AsyncBatchProcess.Dispose();
+        }
+    }
 }

@@ -1,8 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
+using Discord;
 using Discord.WebSocket;
 using RewardBot.Settings;
+using Sandbox.Common.ObjectBuilders.Definitions;
 using static RewardBot.MainBot;
 
 namespace RewardBot.DiscordBot.BOT_SlashCommands
@@ -19,10 +22,6 @@ namespace RewardBot.DiscordBot.BOT_SlashCommands
                 
                 case "rewards-unlink":
                     await RewardsUnlink(command);
-                    break;
-                
-                case "rewards-available":
-                    await RewardsAvailable(command);
                     break;
                 
                 case "rewards-list":
@@ -96,19 +95,6 @@ namespace RewardBot.DiscordBot.BOT_SlashCommands
             await command.RespondAsync("Unable to locate any information linked to your Discord account.", ephemeral: true);
         }
 
-        private static async Task RewardsAvailable(SocketSlashCommand command)
-        {
-            int payouts = 0;
-            for (int index = Instance.Config.Payouts.Count - 1; index >= 0; index--)
-            {
-                Payout payout = Instance.Config.Payouts[index];
-                if (payout.DiscordId == command.User.Id)
-                    payouts++;
-            }
-
-            await command.RespondAsync($"You have {payouts} rewards waiting to be claimed in-game.", ephemeral: true);
-        }
-
         private static async Task RewardsList(SocketSlashCommand command)
         {
             StringBuilder rewards = new StringBuilder();
@@ -123,18 +109,26 @@ namespace RewardBot.DiscordBot.BOT_SlashCommands
 
             if (user == null)
             {
-                await command.RespondAsync("Unable to locate you in the linked player registry.  Have you registered?");
+                await command.RespondAsync("Unable to locate you in the linked player registry.  Have you registered?", ephemeral: true);
                 return;
             }
-            
+
+            int count = 0;
             for (int index = Instance.Config.Payouts.Count - 1; index >= 0; index--)
             {
                 if (Instance.Config.Payouts[index].DiscordId != command.User.Id) continue;
                 Payout reward = Instance.Config.Payouts[index];
-                rewards.AppendLine($"**ID:** {reward.ID}    **Name:**{reward.RewardName}    *Expires in {reward.DaysUntilExpired}*");
+                rewards.AppendLine($"**ID:** {reward.ID}    **Name:** {reward.RewardName}    *Expires in {reward.DaysUntilExpired} days*");
+                count++;
             }
-
-            await command.RespondAsync(rewards.ToString());
+            
+            if (count == 0)
+                await command.RespondAsync("No rewards available.", ephemeral: true);
+            else
+            {
+                rewards.AppendLine($"{count} rewards available.");
+                await command.RespondAsync(rewards.ToString(), ephemeral: true);
+            }
         }
     }
     

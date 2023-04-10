@@ -36,7 +36,6 @@ namespace RewardBot.Settings
     public sealed class Payout
     {
         public int ID { get; set; }
-        public string Name { get; set; }
         public string RewardName { get; set; }
         public ulong SteamID { get; set; }
         public string IngameName { get; set; }

@@ -93,7 +93,7 @@
                         <Button Name="RemoveRegisteredMember" Grid.Row="4" Grid.Column="3" Height="30" Background="DarkRed" Foreground="Azure" Content="Remove Selected Registered Member" Margin="3" Click="RemoveRegisteredMember_OnClick"/>
                     </Grid>
                 </TabItem>
-                <TabItem Header="Settings" IsSelected="True">
+                <TabItem Header="Settings" >
                     <Grid Background="LightSlateGray">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="10" />
@@ -127,7 +127,7 @@
                             <Label Content="Bot Name" Margin="0,5,0,0"/>
                             <TextBox Text="{Binding BotName}" ToolTip="Bot Name to use on Discord." Margin="2,0,2,0"/>
                             
-                            <Button Content="Save Config" Margin="5" Click="SaveButton_OnClick"/>    
+                            <Button Content="Save Config" Margin="5" Click="SaveButton_OnClick"/>
                         </StackPanel>
         
                         <StackPanel Grid.Column="3" Grid.Row="5" UseLayoutRounding="True" Background="DarkSlateGray">
@@ -150,7 +150,7 @@
                                 </ComboBox>
                             </StackPanel>
                             <StackPanel UseLayoutRounding="True" Background="DarkGray">
-                                <Label Content="Reward Commands" Margin="0,5,0,0" HorizontalAlignment="Center" Foreground="#FF27E915" Background="Black" FontWeight="Heavy">
+                                <Label Content="Reward Management" Margin="0,5,0,0" HorizontalAlignment="Center" Foreground="#FF27E915" Background="Black" FontWeight="Heavy">
                                 </Label>
                                 <StackPanel Orientation="Horizontal">                                    
                                     <Label Content="Name:"/>
@@ -179,14 +179,14 @@
                                     <Label Content="PayDay(s):"/>
                                     <TextBox Name="tbDaysToPay" ToolTip="Days of the month to issue reward.  For multiple days, separate the days with commas -> 1,8,15,22 " Width="265" Margin="0,2,0,2"/>
                                 </StackPanel>
-                                <Button Name="NewCommand" Margin="0,2,5,2" Width="120" Click="NewCommand_OnClick">Add New Command</Button>
+                                <Button Name="NewCommand" Margin="0,2,5,2" Width="120" Click="NewCommand_OnClick">Add New Reward</Button>
                                 
                                 <Button Name="DeleteSelectedReward" Margin="2,0,2,0" Click="DeleteSelectedReward_OnClick">Remove Selected Reward</Button>
                                 <TextBlock Name="ShowCommand" Background="Black" Foreground="#FF27E915" Text="Selecting a command will display here."/>
                                  <DataGrid Name="RewardCommandsList" AutoGenerateColumns="False" CanUserAddRows="False" SelectionChanged="RewardCommandsList_OnSelected" >
                                      <DataGrid.Columns>
                                          <DataGridTextColumn Header="ID" Width="50" Binding="{Binding ID}" IsReadOnly="True"/>
-                                         <DataGridTextColumn Header="Name" Width="*" Binding="{Binding Name}" IsReadOnly="True"/>
+                                         <DataGridTextColumn Header="Name" Width="Auto" Binding="{Binding Name}" IsReadOnly="True"/>
                                          <DataGridTextColumn Header="Role" Width="Auto" MinWidth="100" Binding="{Binding Path=CommandRole}" IsReadOnly="True"/>
                                          <DataGridTextColumn Header="PayDay(s)" Width="Auto" MinWidth="100" Binding="{Binding Path=DaysToPay}" IsReadOnly="True"/>
                                          <DataGridTextColumn Header="Expires" Width="Auto" MinWidth="50" Binding="{Binding Path=ExpiresInDays}" IsReadOnly="True"/>
@@ -197,7 +197,7 @@
                     </Grid>
                 </TabItem>
                 
-                <TabItem Header="Payouts" >
+                <TabItem Header="Payouts" IsSelected="True">
                     <Grid Background="LightSlateGray">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="10" />
@@ -301,10 +301,10 @@
                             </Grid>
                         </Border>
                         
-                        <DataGrid Grid.Column="1" Grid.Row="5" Grid.ColumnSpan="3" Name="PayoutList" ItemsSource="{Binding Payouts}" AutoGenerateColumns="False" CanUserAddRows="False" SelectionChanged="PayoutList_OnSelectionChanged" AlternatingRowBackground="Cyan">
+                        <DataGrid Grid.Column="1" Grid.Row="5" Grid.ColumnSpan="3" Name="PayoutList" ItemsSource="{Binding Payouts}" AutoGenerateColumns="False" CanUserAddRows="False" SelectionChanged="PayoutList_OnSelectionChanged" AlternatingRowBackground="Cyan" SelectionMode="Single" VerticalScrollBarVisibility="Visible">
                             <DataGrid.Columns>
                                 <DataGridTextColumn Header="ID" Binding="{Binding Path=ID}" Width="*" IsReadOnly="True"/>
-                                <DataGridTextColumn Header="Reward" Binding="{Binding Path=Name}" Width="*" IsReadOnly="True"/>
+                                <DataGridTextColumn Header="Reward" Binding="{Binding Path=RewardName}" Width="*" IsReadOnly="True"/>
                                 <DataGridTextColumn Header="In-Game Name" Binding="{Binding Path=IngameName}" Width="*" IsReadOnly="True"/>
                                 <DataGridTextColumn Header="SteamID" Binding="{Binding Path=SteamID}" Width="*"/>
                                 <DataGridTextColumn Header="Discord Name" Binding="{Binding Path=DiscordName}" Width="*" IsReadOnly="True"/>

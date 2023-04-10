@@ -8,11 +8,10 @@ using System.Windows.Data;
 using RewardBot.DiscordBot.BOT_SlashCommands;
 using RewardBot.DiscordBot.Utils;
 using RewardBot.Settings;
-using RewardBot.Utils;
 using static RewardBot.MainBot;
 using AsynchronousObservableConcurrentList;
+using Discord.Interactions;
 using Helper = RewardBot.DiscordBot.Utils.Helper;
-using Log = RewardBot.Utils.Log;
 
 namespace RewardBot.DiscordBot
 {
@@ -24,11 +23,9 @@ namespace RewardBot.DiscordBot
         public UserUtils UserUtils = new UserUtils();
         public Helper HelperUtils = new Helper();
         public List<SocketApplicationCommand> ExistingCommands = new List<SocketApplicationCommand>();
-        public List<SlashCommandProperties> AllCommands = new List<SlashCommandProperties>();
+        public List<SlashCommandProperties> UserCommands = new List<SlashCommandProperties>();
         public AsynchronousObservableConcurrentList<SocketRole> Roles = new AsynchronousObservableConcurrentList<SocketRole>();
         public static object Roles_LOCK = new object();
-        public PayManager RewardManager = new PayManager();
-        
 
         public Bot()
         {
@@ -70,39 +67,35 @@ namespace RewardBot.DiscordBot
             return Task.CompletedTask;
         }
 
-        private Task ClientOnRoleUpdated(SocketRole originalRole, SocketRole updatedRole)
+        private async Task ClientOnRoleUpdated(SocketRole originalRole, SocketRole updatedRole)
         {
-            Instance.Control.Dispatcher.BeginInvoke((Action)(() =>
+            await Instance.Control.Dispatcher.BeginInvoke((Action)(() =>
             {
                 Roles.Remove(originalRole);
                 Roles.Add(updatedRole);
             }));
-            return Task.CompletedTask;
         }
 
-        private Task ClientOnRoleDeleted(SocketRole role)
+        private async Task ClientOnRoleDeleted(SocketRole role)
         {
-            Instance.Control.Dispatcher.BeginInvoke((Action)(() =>
+            await Instance.Control.Dispatcher.BeginInvoke((Action)(() =>
             {
                 if (Roles.Contains(role))
                     Roles.Remove(role);
             }));
-            return Task.CompletedTask;
         }
 
-        private Task ClientOnRoleCreated(SocketRole role)
+        private async Task ClientOnRoleCreated(SocketRole role)
         {
-            Instance.Control.Dispatcher.BeginInvoke((Action)(() => { Roles.Add(role); }));
-            return Task.CompletedTask;
+            await Instance.Control.Dispatcher.BeginInvoke((Action)(() => { Roles.Add(role); }));
         }
 
         private async Task ClientOnDisconnected(Exception arg)
         {
-            await Client.SetStatusAsync(UserStatus.AFK);
+            await Client.SetStatusAsync(UserStatus.DoNotDisturb);
             Instance.Config.SetBotStatus(BotStatusEnum.Disconnecting);
-            await Client.StopAsync();
             await Client.LogoutAsync();
-            Instance.Config.SetBotStatus(BotStatusEnum.Offline);
+            await Client.StopAsync();
         }
 
         public async Task Connect()
@@ -120,8 +113,6 @@ namespace RewardBot.DiscordBot
         private Task _client_Connected()
         {
             Guilds = new List<SocketGuild>(Client.Guilds); // Get list of all servers the bot is on.  This should only contain 1.
-            
-            Instance.Config.SetBotStatus(BotStatusEnum.Online);
             
             return Task.CompletedTask;
         }
@@ -151,7 +142,7 @@ namespace RewardBot.DiscordBot
                 }
                 tooManyGuildsError.AppendLine("** THIS BOT SHOULD ONLY BE REGISTERED ON 1 DISCORD SERVER, UNEXPECTED RESULTS MAY OCCUR **");
 
-                await MainBot.Log.Error(tooManyGuildsError);
+                await Log.Error(tooManyGuildsError);
             }
         }
 
@@ -176,8 +167,11 @@ namespace RewardBot.DiscordBot
                     await Client.SetStatusAsync(UserStatus.Idle);
                     break;
             }
-
+            
+            GuildUserCommandBuilder userCommandBuilder = await GuildUserCommandBuilder.CreateAsync();
+            
             Instance.Config.SetBotStatus(BotStatusEnum.Online);
+            await Client.SetStatusAsync(UserStatus.Online);
             await VerifySingleGuild();
         }
 
@@ -219,12 +213,12 @@ namespace RewardBot.DiscordBot
 
         private async Task _client_UserLeft(SocketGuild guild, SocketUser user)
         {
-            await MainBot.Log.Info($"{user.Username} has left {guild.Name} Discord");
+            await Log.Info($"{user.Username} has left {guild.Name} Discord");
 
             for (int i = Instance.DiscordMembers.Count -1; i >= 0; i--)
             {
                 if (Instance.DiscordMembers[i].Id != user.Id) continue;
-                await MainBot.Log.Info($"{user.Username} subscription to {Instance.Config.BotName} has been cancelled.");
+                await Log.Info($"{user.Username} subscription to {Instance.Config.BotName} has been cancelled.");
                 Instance.DiscordMembers.RemoveAt(i);
 
                 SocketGuildUser removeMember = null;
@@ -245,7 +239,7 @@ namespace RewardBot.DiscordBot
             }
         }
 
-        private Task _client_UserJoined(SocketGuildUser user)
+        private  Task _client_UserJoined(SocketGuildUser user)
         {
             Instance.DiscordMembers.Add(user);
             return Task.CompletedTask;
@@ -254,14 +248,14 @@ namespace RewardBot.DiscordBot
         private async Task GetUsersAsync()
         {
             await Guild.DownloadUsersAsync(); // Gets all users on the first server in the list of servers.
-            Instance.DiscordMembers.AddRange(Guild.Users);
+            await Instance.Control.Dispatcher.BeginInvoke((Action) (() => { Instance.DiscordMembers.AddRange(Guild.Users); }));
         }
 
         private static async Task Logging(LogMessage msg)
         {
             if (msg.Message == null)
             {
-                await MainBot.Log.Error(msg.ToString());
+                await Log.Error(msg.ToString());
                 return;
             }
 
@@ -270,7 +264,7 @@ namespace RewardBot.DiscordBot
             
             if (msg.ToString().Contains("Discord.Net.HttpException: The server responded with error 401"))
             {
-                await MainBot.Log.Error("Discord responded with error 401:Unauthorized.  Is your Token/Key valid?");
+                await Log.Error("Discord responded with error 401:Unauthorized.  Is your Token/Key valid?");
                 return;
             }
 
@@ -285,24 +279,24 @@ namespace RewardBot.DiscordBot
             {
                 case LogSeverity.Critical:
                 case LogSeverity.Error:
-                    await MainBot.Log.Error(msg.ToString());
+                    await Log.Error(msg.ToString());
                     break;
 
                 case LogSeverity.Debug:
-                    await MainBot.Log.Debug(msg.ToString());
+                    await Log.Debug(msg.ToString());
                     break;
 
                 case LogSeverity.Warning:
-                    await MainBot.Log.Warn(msg.ToString());
+                    await Log.Warn(msg.ToString());
                     break;
 
                 case LogSeverity.Info:
                 case LogSeverity.Verbose:
-                    await MainBot.Log.Info(msg.ToString());
+                    await Log.Info(msg.ToString());
                     break;
 
                 default:
-                    await MainBot.Log.Warn($"Invalid SeverityLevel from Discord Log --> {msg.Severity} :: {msg.Source} :: {msg.Message}");
+                    await Log.Warn($"Invalid SeverityLevel from Discord Log --> {msg.Severity} :: {msg.Source} :: {msg.Message}");
                     break;
             }
         }

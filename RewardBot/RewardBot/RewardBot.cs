@@ -33,7 +33,7 @@ namespace RewardBot
         public static Bot DiscordBot;
         public AsynchronousObservableConcurrentList<SocketGuildUser> DiscordMembers = new AsynchronousObservableConcurrentList<SocketGuildUser>();
         public static ID_Manager IdManager = new ID_Manager();
-        
+        public static PayManager RewardManager = new PayManager();
         public bool WorldOnline;
         public static readonly CommandsManager CommandsManager = new CommandsManager();
         private Timer _scheduledWork = new Timer();
@@ -53,7 +53,7 @@ namespace RewardBot
             await Save();
             Instance = this;
             Config.SetBotStatus(BotStatusEnum.Offline);
-            _scheduledWork.Interval = TimeSpan.FromMinutes(5).TotalMilliseconds; // Easier than doing math to change :)
+            _scheduledWork.Interval = TimeSpan.FromMinutes(60).TotalMilliseconds; // Easier than doing math to change :)
             _scheduledWork.Elapsed += (sender, args) => { WorkScheduled(); }; 
             _scheduledWork.Start();
             DiscordBot = new Bot();
@@ -73,6 +73,8 @@ namespace RewardBot
                     WorldOnline = true;
                     if (Config.EnabledOnline && !Instance.Config.IsBotOnline())
                         await DiscordBot.Connect();
+                    if (Instance.Config.IsBotOnline())
+                        await DiscordBot.Client.SetStatusAsync(UserStatus.Online);
                     break;
 
                 case TorchSessionState.Unloading:
@@ -82,6 +84,7 @@ namespace RewardBot
                         await DiscordBot.Disconnect();
                     else
                         await DiscordBot.Client.SetStatusAsync(UserStatus.AFK);
+                    await Log.FlushAsync();
                     break;
             }
         }
@@ -107,7 +110,7 @@ namespace RewardBot
             }
         }
 
-        private async void WorkScheduled()
+        private async Task WorkScheduled()
         {
             // Clear Link Expired Request
             for (int index = Config.LinkRequests.Count - 1; index >= 0; index--)
@@ -118,6 +121,7 @@ namespace RewardBot
             }
             
             // Check for scheduled payouts
+            await RewardManager.Payout();
             
             // Clear expired payouts
             for (int index = Config.Payouts.Count - 1; index >= 0; index--)

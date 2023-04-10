@@ -15,15 +15,14 @@ namespace RewardBot.Settings
         private bool _removeBannedUserFromRegistry;
         private AsynchronousObservableConcurrentList<LinkRequest> _linkRequests = new AsynchronousObservableConcurrentList<LinkRequest>();
         private BotStatusEnum _botStatus = BotStatusEnum.Offline;
-           
-        
-        
+
+
         // Boost Reward Settings
         private AsynchronousObservableConcurrentList<RegisteredUsers> _registeredUsers = new AsynchronousObservableConcurrentList<RegisteredUsers>();
         private string _boostRewardsPayDay = "1"; // Day of the month to run the _BoostRewardsCommand
         private AsynchronousObservableConcurrentList<Reward> _rewardCommands = new AsynchronousObservableConcurrentList<Reward>();
         private AsynchronousObservableConcurrentList<Payout> _payouts = new AsynchronousObservableConcurrentList<Payout>();
-        private int _lastPayoutId = 0;
+        private int _lastPayoutId = 1;
         private int _lastRewardId = 1;
 
         public string BotName { get => _botName; set => SetValue(ref _botName, value); }
@@ -49,7 +48,5 @@ namespace RewardBot.Settings
         {
             return BotStatus == BotStatusEnum.Online;
         }
-
-        
     }
 }

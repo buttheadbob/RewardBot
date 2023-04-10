@@ -6,35 +6,30 @@ using Discord.WebSocket;
 
 namespace RewardBot.DiscordBot.BOT_SlashCommands
 {
-    public class GuildCommandBuilder
+    public class GuildUserCommandBuilder
     {
         private SocketGuild _guild;
 
-        private GuildCommandBuilder() { }  // We're using a factory constructor, leave this blank.
+        private GuildUserCommandBuilder() { }  // We're using a factory constructor, leave this blank.
 
-        private async Task<GuildCommandBuilder> InitAsync()
+        private async Task<GuildUserCommandBuilder> InitAsync()
         {
-            _guild = MainBot.DiscordBot.Client.GetGuild(MainBot.DiscordBot.Guilds[0].Id);
+            _guild = MainBot.DiscordBot.Guild;
             
             // Link command
-            SlashCommandBuilder boostRewardRegister = new SlashCommandBuilder();
-            boostRewardRegister.WithName("rewards-link");
-            boostRewardRegister.WithDescription("Links your SteamID and Discord account. Required for some rewards.");
+            SlashCommandBuilder boostRewardRegister = new SlashCommandBuilder()
+                .WithName("rewards-link")
+                .WithDescription("Links your SteamID and Discord account. Required for some rewards.");
             
             // Unlink command
-            SlashCommandBuilder boostRewardUnregister = new SlashCommandBuilder();
-            boostRewardUnregister.WithName("rewards-unlink");
-            boostRewardUnregister.WithDescription("Unlink your SteamID and Discord account.");
-            
-            // How many rewards available
-            SlashCommandBuilder countRewards = new SlashCommandBuilder();
-            countRewards.WithName("rewards-available");
-            countRewards.WithDescription("Tells you how many rewards you have available.");
+            SlashCommandBuilder boostRewardUnregister = new SlashCommandBuilder()
+                .WithName("rewards-unlink")
+                .WithDescription("Unlink your SteamID and Discord account.");
             
             // List All Available Rewards
-            SlashCommandBuilder listRewards = new SlashCommandBuilder();
-            listRewards.WithName("rewards-list");
-            listRewards.WithDescription("List your available rewards.");
+            SlashCommandBuilder listRewards = new SlashCommandBuilder()
+                .WithName("rewards-list")
+                .WithDescription("List your available rewards.");
             
             await BuildCommands(boostRewardRegister);
             await MainBot.Log.Info($"Preparing Command -> {boostRewardRegister.Name}");
@@ -42,19 +37,16 @@ namespace RewardBot.DiscordBot.BOT_SlashCommands
             await BuildCommands(boostRewardUnregister);
             await MainBot.Log.Info($"Preparing Command -> {boostRewardUnregister.Name}");
 
-            await BuildCommands(countRewards);
-            await MainBot.Log.Info($"Preparing Command -> {countRewards.Name}");
-
             await BuildCommands(listRewards);
             await MainBot.Log.Info($"Preparing Command -> {listRewards.Name}");
 
-            await MainBot.DiscordBot.HelperUtils.SetGuildCommands();
+            await MainBot.DiscordBot.HelperUtils.SetUserCommands();
             return this;
         }
         
-        public static Task<GuildCommandBuilder> CreateAsync()
+        public static Task<GuildUserCommandBuilder> CreateAsync()
         {
-            GuildCommandBuilder ret = new GuildCommandBuilder();
+            GuildUserCommandBuilder ret = new GuildUserCommandBuilder();
             return ret.InitAsync();
         }
 
@@ -62,15 +54,14 @@ namespace RewardBot.DiscordBot.BOT_SlashCommands
         {
             try
             {
-                MainBot.DiscordBot.AllCommands.Add(command.Build());
+                MainBot.DiscordBot.UserCommands.Add(command.Build());
             }
             catch (HttpException exception)
             {
                 // Yes, this is a large log but its easier to figure out whats going on
-                // since UD doesn't have any discord bot developers.
                 
                 StringBuilder exceptionFormatted = new StringBuilder();
-                exceptionFormatted.AppendLine("* Error creating application command *");
+                exceptionFormatted.AppendLine("* Error creating user application command *");
                 exceptionFormatted.AppendLine("Command: " + command.Name);
                 exceptionFormatted.AppendLine("Reason: " + exception.Reason);
                 exceptionFormatted.AppendLine("Message: " + exception.Message);

@@ -10,6 +10,7 @@ using System.Windows.Threading;
 using Discord;
 using Discord.WebSocket;
 using AsynchronousObservableConcurrentList;
+using RewardBot.DiscordBot.BOT_SlashCommands;
 using RewardBot.Settings;
 using static RewardBot.MainBot;
 
@@ -87,8 +88,8 @@ namespace RewardBot.UI
 
         private async void ForceBoosterRewardPayout_OnClick(object sender, RoutedEventArgs e)
         {
-            if (Instance.Config.EnabledOnline && MainBot.DiscordBot.Guilds.Count >= 1)
-                await MainBot.DiscordBot.RewardManager.Payout();
+            if (Instance.Config.EnabledOnline)
+                await RewardManager.Payout();
             else
                 await Log.Warn("Unable to payout rewards.  Bot offline or not in any servers.");
         }
@@ -217,7 +218,7 @@ namespace RewardBot.UI
             if ( MessageBox.Show($"Are you sure you want to run the reward command [{Instance.Config.Rewards[ForceSelectedPayoutToAll.SelectedIndex].Name}] on ALL players, regardless if they have already received their rewards or not?  This will not count towards their scheduled reward payments.", "CAUTION!!!", MessageBoxButton.OKCancel, MessageBoxImage.Warning) == MessageBoxResult.Cancel) 
                 return;
             
-            await MainBot.DiscordBot.RewardManager.Payout(Instance.Config.Rewards[ForceSelectedPayoutToAll.SelectedIndex].ID, true);
+            await RewardManager.Payout(Instance.Config.Rewards[ForceSelectedPayoutToAll.SelectedIndex].ID, true);
         }
 
         private void Hyperlink_OnRequestNavigate(object sender, RequestNavigateEventArgs e)
@@ -354,32 +355,7 @@ namespace RewardBot.UI
                 return;
             }
 
-            Payout newPayout = new Payout
-            {
-                ID = MainBot.IdManager.GetNewPayoutID(),
-                Name = "ManualPayout",
-                DiscordName = tbDiscordName.Text,
-                DiscordId = discordId,
-                Command = tbCommand.Text,
-                IngameName = tbInGameName.Text,
-                SteamID = steamId,
-                PaymentDate = DateTime.Now,
-                ExpiryDate = DateTime.Now + TimeSpan.FromDays(intManualExpires)
-            };
-            
-            Instance.Config.Payouts.Add(newPayout);
-            await Instance.Save();
-
-            StringBuilder manualRewardLog = new StringBuilder();
-            manualRewardLog.AppendLine("Manual Reward Issued!!");
-            manualRewardLog.AppendLine($"ID           -> {newPayout.ID}");
-            manualRewardLog.AppendLine($"In-Game Name -> {tbDiscordName.Text}");
-            manualRewardLog.AppendLine($"SteamID      -> {steamId}");
-            manualRewardLog.AppendLine($"Discord Name -> {tbDiscordName.Text}");
-            manualRewardLog.AppendLine($"Discord ID   -> {discordId}");
-            manualRewardLog.AppendLine($"Command      -> {tbCommand.Text}");
-            manualRewardLog.AppendLine($"Expires      -> [{intManualExpires} Days] {newPayout.ExpiryDate}");
-            await Log.Warn(manualRewardLog);
+            await RewardManager.ManualPayout(discordId, tbDiscordName.Text, tbInGameName.Text, steamId, tbCommand.Text, intManualExpires);
         }
 
         private void TbRoleComboBox_OnSelectionChanged(object sender, RoutedEventArgs routedEventArgs)
@@ -476,17 +452,20 @@ namespace RewardBot.UI
 
         private async void DeletePayout_OnClick(object sender, RoutedEventArgs e)
         {
+            if (RewardCommandsList.SelectedIndex == 0 || RewardCommandsList.SelectedIndex > RewardCommandsList.Items.Count) return;
+            Payout payout = (Payout) PayoutList.SelectedItem;
+            if (payout == null) return;
             StringBuilder logDeletePayout = new StringBuilder();
             logDeletePayout.AppendLine("Player Reward Manually Deleted:");
-            logDeletePayout.AppendLine($"In-Game Name -> {Instance.Config.Payouts[PayoutList.SelectedIndex].IngameName}");
-            logDeletePayout.AppendLine($"SteamID      -> {Instance.Config.Payouts[PayoutList.SelectedIndex].SteamID.ToString()}");
-            logDeletePayout.AppendLine($"Discord Name -> {Instance.Config.Payouts[PayoutList.SelectedIndex].DiscordName}");
-            logDeletePayout.AppendLine($"Discord ID   -> {Instance.Config.Payouts[PayoutList.SelectedIndex].DiscordId}");
-            logDeletePayout.AppendLine($"Command      -> {Instance.Config.Payouts[PayoutList.SelectedIndex].Command}");
-            logDeletePayout.AppendLine($"Expires      -> ({ Instance.Config.Payouts[PayoutList.SelectedIndex].DaysUntilExpired.ToString()} days)  {Instance.Config.Payouts[PayoutList.SelectedIndex].ExpiryDate}");
+            logDeletePayout.AppendLine($"In-Game Name -> {payout.IngameName}");
+            logDeletePayout.AppendLine($"SteamID      -> {payout.SteamID.ToString()}");
+            logDeletePayout.AppendLine($"Discord Name -> {payout.DiscordName}");
+            logDeletePayout.AppendLine($"Discord ID   -> {payout.DiscordId.ToString()}");
+            logDeletePayout.AppendLine($"Command      -> {payout.Command}");
+            logDeletePayout.AppendLine($"Expires      -> ({payout.DaysUntilExpired.ToString()} days)  {Instance.Config.Payouts[PayoutList.SelectedIndex].ExpiryDate}");
 
             await Log.Warn(logDeletePayout);
-            Instance.Config.Payouts.RemoveAt(PayoutList.SelectedIndex);
+            Instance.Config.Payouts.Remove(payout);
             await Instance.Save();
         }
 
