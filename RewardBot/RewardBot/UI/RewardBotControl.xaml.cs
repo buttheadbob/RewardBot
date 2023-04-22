@@ -11,6 +11,7 @@ using Discord;
 using Discord.WebSocket;
 using AsynchronousObservableConcurrentList;
 using RewardBot.DiscordBot.BOT_SlashCommands;
+using RewardBot.RewardBot.UI;
 using RewardBot.Settings;
 using static RewardBot.MainBot;
 
@@ -229,59 +230,10 @@ namespace RewardBot.UI
 
         private void SendDmToPlayer_OnClick(object sender, RoutedEventArgs e)
         {
+            if (DiscordMembersGrid.SelectedIndex == -1) return;
             
-            DmPopup.IsOpen = true;
-            SocketGuildUser selectedUser = (SocketGuildUser)DiscordMembersGrid.SelectedItem;
-            if (selectedUser == null)
-            {
-                PopupDialogFinished();
-                return;
-            }
-            
-            PopupUserName.Text = string.IsNullOrEmpty(selectedUser.Nickname) ? selectedUser.Username : $"{selectedUser.Username} [{selectedUser.Nickname}]";
-        }
-
-        private async void SendMessage_OnClick(object sender, RoutedEventArgs e)
-        {
-            SocketGuildUser selectedUser = (SocketGuildUser)DiscordMembersGrid.SelectedItem;
-            
-            if (selectedUser == null)
-            {
-                PopupDialogFinished();
-                MessageBox.Show("No Discord user selected.", "Select Somebody!!", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            if (string.IsNullOrWhiteSpace(PopupMessage.Text))
-            {
-                MessageBox.Show("Enter a message!", "Spamming blank messages.....", MessageBoxButton.OK, MessageBoxImage.Error);
-                PopupDialogFinished();
-                return;
-            }
-
-            if (!Instance.Config.IsBotOnline())
-            {
-                MessageBox.Show("Bot Offline, Cannot Send Any Messages!", "Error sending direct message", MessageBoxButton.OK, MessageBoxImage.Error);
-                PopupDialogFinished();
-                return;
-            }
-            DmPopup.IsOpen = false;
-            IUser user = await MainBot.DiscordBot.Client.GetUserAsync(selectedUser.Id);
-            string results = await MainBot.DiscordBot.UserUtils.SendDirectMessage(user, PopupMessage.Text);
-            MessageBox.Show(results, "Reply from Discord", MessageBoxButton.OK, MessageBoxImage.Information);
-            PopupDialogFinished();
-        }
-
-        private void PopupDialogFinished()
-        {
-            PopupUserName.Text = "";
-            PopupMessage.Text = "";
-            DmPopup.IsOpen = false;
-        }
-
-        private void CancelPopup_OnClick(object sender, RoutedEventArgs e)
-        {
-            PopupDialogFinished();
+            SendDiscordPM SendDMWindow = new SendDiscordPM((SocketGuildUser)DiscordMembersGrid.SelectedItem);
+            SendDMWindow.ShowDialog();
         }
 
         private void EnableOnlineCheckBox_OnClick(object sender, RoutedEventArgs e)

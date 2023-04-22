@@ -23,7 +23,7 @@
             <Label Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2" Content="Rewards Bot" FontSize="40" FontWeight="Heavy" Foreground="#FF27E915"/>
             
             <TabControl Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2">
-                <TabItem Header="Discord" >
+                <TabItem Header="Discord" IsSelected="True">
                     <Grid Background = "LightSlateGray">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="10"/>
@@ -78,17 +78,7 @@
                             </DataGrid>
                         </StackPanel>
                         
-                        <Popup Grid.Column="1" Grid.Row="1" Margin="10" Name="DmPopup" HorizontalAlignment="Left" VerticalAlignment="Top" Width="450" Height="300" IsOpen="False">
-                            <Border BorderBrush="DarkGreen" BorderThickness="5,0,5,0" CornerRadius="10" Width="300">
-                                <StackPanel>
-                                    <TextBlock Text="Send Direct Message" Margin="10" TextAlignment="Center"/>
-                                    <TextBlock Name="PopupUserName" Background="Black" Foreground="LawnGreen" HorizontalAlignment="Center"/>
-                                    <TextBox Name="PopupMessage" Background="Black" Foreground="LawnGreen" TextWrapping="Wrap" Height="100"/>
-                                    <Button Name="ClosePopup" Content="Send Message" Click="SendMessage_OnClick"/>
-                                    <Button Name="CancelPopup" Content="Cancel" Click="CancelPopup_OnClick"/>
-                                </StackPanel>
-                            </Border>
-                        </Popup>
+                        
                         <Button Name="SendDmToPlayer" Grid.Row="4" Grid.Column="1" Height="30" Background="DarkRed" Foreground="Azure" Content="Send Message To Selected Discord Member" Margin="3" ToolTip="This will send a DM to the selected player.  They will be notified that all responses will not be received." Click="SendDmToPlayer_OnClick"/>
                         <Button Name="RemoveRegisteredMember" Grid.Row="4" Grid.Column="3" Height="30" Background="DarkRed" Foreground="Azure" Content="Remove Selected Registered Member" Margin="3" Click="RemoveRegisteredMember_OnClick"/>
                     </Grid>
@@ -197,7 +187,7 @@
                     </Grid>
                 </TabItem>
                 
-                <TabItem Header="Payouts" IsSelected="True">
+                <TabItem Header="Payouts" >
                     <Grid Background="LightSlateGray">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="10" />
