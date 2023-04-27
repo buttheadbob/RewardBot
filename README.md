@@ -1,3 +1,12 @@
+<p align="center">
+  <a href="https://discord.gg/rSuxGrHrrt">
+    <img src="https://img.shields.io/badge/VERSION-1.0.0.1-red" alt="Discord Server">
+  </a>
+  <a href="https://discord.gg/rSuxGrHrrt">
+    <img src="https://discordapp.com/api/guilds/1089078620829536269/widget.png?style=shield" alt="Discord Server">
+  </a>
+  </p> 
+
 # RewardBot
 
 Discord reward bot, allows you to run commands in game at preset times for members with appropriate Discord roles.
@@ -5,10 +14,6 @@ Discord reward bot, allows you to run commands in game at preset times for membe
 For example, you can reward your Discord Boosters on specified day(s) of the month with Ores, Ingots, Components... etc.
 Works best with CrunchUtils !giveitem command but will also work with any other command that players or staff can run in-game.  
 For more information, check out my Discord  
-  
-##  https://discord.com/invite/rSuxGrHrrt
-  
-  
     
     
 # License
