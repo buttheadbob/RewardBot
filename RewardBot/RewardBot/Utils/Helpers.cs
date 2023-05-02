@@ -14,7 +14,6 @@ using Sandbox.Game.Multiplayer;
 using Sandbox.Game.World;
 using Torch.Mod;
 using Torch.Mod.Messages;
-using VRage.Sync;
 using static RewardBot.MainBot;
 using MessageBox = System.Windows.MessageBox;
 using Timer = System.Timers.Timer;

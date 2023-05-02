@@ -54,7 +54,7 @@ namespace RewardBot
             Instance = this;
             Config.SetBotStatus(BotStatusEnum.Offline);
             _scheduledWork.Interval = TimeSpan.FromMinutes(60).TotalMilliseconds; // Easier than doing math to change :)
-            _scheduledWork.Elapsed += (sender, args) => { WorkScheduled(); }; 
+            _scheduledWork.Elapsed += (sender, args) => { WorkScheduled().GetAwaiter().GetResult(); }; 
             _scheduledWork.Start();
             DiscordBot = new Bot();
             if (Config.EnabledOffline)
