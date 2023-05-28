@@ -213,6 +213,18 @@ namespace RewardBot.Utils
             }
             payoutReport.AppendLine("** THIS IS A PAYALL REQUEST **");
 
+            if (Instance.Config.RegisteredUsers.Count == 0)
+            {
+                MessageBox.Show("No players to receive payout.", "Error", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+            
+            if (Instance.Config.Rewards.Count == 0)
+            {
+                MessageBox.Show("No rewards to issue.", "Error", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+            
             for (int userIndex = Instance.Config.RegisteredUsers.Count - 1; userIndex >= 0; userIndex--)
             {
                 if (!Instance.Config.IsBotOnline())

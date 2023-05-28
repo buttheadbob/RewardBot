@@ -148,44 +148,60 @@ namespace RewardBot.DiscordBot
 
         private async Task ClientOnReady()
         {
-            Guild = Client.GetGuild(Guilds[0].Id);
-            await GetRoles();
-            await GetUsersAsync();
-            SocketGuildUser botUser = Guild.GetUser(Client.CurrentUser.Id);
-            await botUser.ModifyAsync(x => { x.Nickname = Instance.Config.BotName; });
-            await Client.SetGameAsync(Instance.Config.BotStatusMessage, null, ActivityType.Playing);
-            Client.UserJoined += _client_UserJoined;
-            Client.UserLeft += _client_UserLeft;
-            Client.UserBanned += ClientOnUserBanned;
-            Client.SlashCommandExecuted += CommandRan.ClientOnSlashCommandExecuted;
-            switch (Instance.WorldOnline)
+            try
             {
-                case true:
-                    await Client.SetStatusAsync(UserStatus.Online);
-                    break;
-                case false:
-                    await Client.SetStatusAsync(UserStatus.Idle);
-                    break;
+                Guild = Client.GetGuild(Guilds[0].Id);
+                await GetRoles();
+                await GetUsersAsync();
+                SocketGuildUser botUser = Guild.GetUser(Client.CurrentUser.Id);
+                await botUser.ModifyAsync(x => { x.Nickname = Instance.Config.BotName; });
+                await Client.SetGameAsync(Instance.Config.BotStatusMessage, null, ActivityType.Playing);
+                Client.UserJoined += _client_UserJoined;
+                Client.UserLeft += _client_UserLeft;
+                Client.UserBanned += ClientOnUserBanned;
+                Client.SlashCommandExecuted += CommandRan.ClientOnSlashCommandExecuted;
+                switch (Instance.WorldOnline)
+                {
+                    case true:
+                        await Client.SetStatusAsync(UserStatus.Online);
+                        break;
+                    case false:
+                        await Client.SetStatusAsync(UserStatus.Idle);
+                        break;
+                }
+            
+                GuildUserCommandBuilder userCommandBuilder = await GuildUserCommandBuilder.CreateAsync();
+            
+                Instance.Config.SetBotStatus(BotStatusEnum.Online);
+                await Client.SetStatusAsync(UserStatus.Online);
+                await VerifySingleGuild();
+            } catch (Exception ex)
+            {
+                await Log.Error($"Error in ClientOnReady: {ex.Message}");
+                await Log.Error($"Stack trace: {ex.StackTrace}");
             }
             
-            GuildUserCommandBuilder userCommandBuilder = await GuildUserCommandBuilder.CreateAsync();
-            
-            Instance.Config.SetBotStatus(BotStatusEnum.Online);
-            await Client.SetStatusAsync(UserStatus.Online);
-            await VerifySingleGuild();
         }
 
         private async Task GetRoles()
         {
-            IReadOnlyCollection<SocketRole> roles = Guild.Roles;
-            
-            await Instance.Control.Dispatcher.BeginInvoke((Action)(()=> {Roles.AddRange(roles);}));
-            await Instance.Control.tbRoleComboBox.Dispatcher.BeginInvoke((Action)(() =>
+            try
             {
-                Instance.Control.tbRoleComboBox.ItemsSource = null;
-                Instance.Control.tbRoleComboBox.ItemsSource = MainBot.DiscordBot.Roles;
+                IReadOnlyCollection<SocketRole> roles = Guild.Roles;
+            
+                await Instance.Control.Dispatcher.BeginInvoke((Action)(()=> {Roles.AddRange(roles);}));
+                await Instance.Control.tbRoleComboBox.Dispatcher.BeginInvoke((Action)(() =>
+                {
+                    Instance.Control.tbRoleComboBox.ItemsSource = null;
+                    Instance.Control.tbRoleComboBox.ItemsSource = MainBot.DiscordBot.Roles;
                 
-            }));
+                }));
+            } catch (Exception ex)
+            {
+                await Log.Error($"Error in GetRoles: {ex.Message}");
+                await Log.Error($"Stack trace: {ex.StackTrace}");
+            }
+            
         }
 
         private Task ClientOnUserBanned(SocketUser bannedUser, SocketGuild server)

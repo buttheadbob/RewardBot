@@ -216,6 +216,13 @@ namespace RewardBot.UI
 
         private async void ForceBoosterRewardPayoutAll_OnClick(object sender, RoutedEventArgs e)
         {
+            if (ForceSelectedPayoutToAll.SelectedIndex == -1)
+            {
+                MessageBox.Show("Please select a reward command to run on all players.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+            
+            
             if ( MessageBox.Show($"Are you sure you want to run the reward command [{Instance.Config.Rewards[ForceSelectedPayoutToAll.SelectedIndex].Name}] on ALL players, regardless if they have already received their rewards or not?  This will not count towards their scheduled reward payments.", "CAUTION!!!", MessageBoxButton.OKCancel, MessageBoxImage.Warning) == MessageBoxResult.Cancel) 
                 return;
             
