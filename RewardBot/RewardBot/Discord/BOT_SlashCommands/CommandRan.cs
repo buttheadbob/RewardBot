@@ -57,6 +57,13 @@ namespace RewardBot.DiscordBot.BOT_SlashCommands
                     endLoop = true;
             }
             
+            // Check if already registered
+            for (int index = Instance.Config.RegisteredUsers.Count - 1; index >= 0; index--)
+            {
+                if (Instance.Config.RegisteredUsers[index].DiscordId != command.User.Id) continue;
+                await command.RespondAsync($"You are already registered.");
+                return;
+            }
 
             for (int index = Instance.Config.LinkRequests.Count - 1; index >= 0; index--)
             {
