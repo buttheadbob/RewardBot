@@ -25,6 +25,8 @@ namespace RewardBot.UI
         public AsynchronousObservableConcurrentList<RegisteredUsers> FilteredRegisteredUsers = new AsynchronousObservableConcurrentList<RegisteredUsers>(); 
         public static object FilteredRegisteredUsers_LOCK = new object();
         
+        private int lastSelectedItem = -1; // Used to store last selected payout for the delete payout button.
+        
         private delegate void UpdateUI();
         
         public RewardBotControl()
@@ -33,6 +35,7 @@ namespace RewardBot.UI
             BindingOperations.EnableCollectionSynchronization(FilteredRegisteredUsers , FilteredRegisteredUsers_LOCK);
             
             InitializeComponent();
+            UiDispatcher = Dispatcher;
             DataContext = Instance.Config;
             DiscordMembersGrid.DataContext = this;
             RegisteredMembersGrid.DataContext = this;
@@ -400,7 +403,8 @@ namespace RewardBot.UI
         {
             Payout editPayout = (Payout)PayoutList.SelectedItem;
             if (editPayout == null) return;
-
+            lastSelectedItem = PayoutList.SelectedIndex;
+            
             TbEditInGameName.Text = editPayout.IngameName;
             TbEditSteamId.Text = editPayout.SteamID.ToString();
             TbEditDiscordName.Text = editPayout.DiscordName;
@@ -411,8 +415,8 @@ namespace RewardBot.UI
 
         private async void DeletePayout_OnClick(object sender, RoutedEventArgs e)
         {
-            if (RewardCommandsList.SelectedIndex == 0 || RewardCommandsList.SelectedIndex > RewardCommandsList.Items.Count) return;
-            Payout payout = (Payout) PayoutList.SelectedItem;
+            if (lastSelectedItem == -1) return;
+            Payout payout = (Payout) PayoutList.Items.GetItemAt(lastSelectedItem);
             if (payout == null) return;
             StringBuilder logDeletePayout = new StringBuilder();
             logDeletePayout.AppendLine("Player Reward Manually Deleted:");
@@ -424,7 +428,7 @@ namespace RewardBot.UI
             logDeletePayout.AppendLine($"Expires      -> ({payout.DaysUntilExpired.ToString()} days)  {Instance.Config.Payouts[PayoutList.SelectedIndex].ExpiryDate}");
 
             await Log.Warn(logDeletePayout);
-            Instance.Config.Payouts.Remove(payout);
+            UiDispatcher.InvokeAsync(() => { Instance.Config.Payouts.Remove(payout); }); 
             await Instance.Save();
         }
 

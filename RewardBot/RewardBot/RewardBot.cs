@@ -4,6 +4,7 @@ using System.IO;
 using System.Threading.Tasks;
 using System.Timers;
 using System.Windows.Controls;
+using System.Windows.Threading;
 using Discord.WebSocket;
 using AsynchronousObservableConcurrentList;
 using Discord;
@@ -37,6 +38,7 @@ namespace RewardBot
         public bool WorldOnline;
         public static readonly CommandsManager CommandsManager = new CommandsManager();
         private Timer _scheduledWork = new Timer();
+        public static Dispatcher UiDispatcher { get; set; }
         
         
         public override async void Init(ITorchBase torch)

@@ -22,7 +22,8 @@ namespace RewardBot.Utils
 {
     public static class Helper
     {
-        private static readonly object RegisteredUserLock = new object(); 
+        private static readonly object RegisteredUserLock = new object();
+        private static readonly object PayoutLock = new object();
         
         // SunsetQuest Method
         public static string RemoveWhiteSpace(string str)
@@ -105,16 +106,23 @@ namespace RewardBot.Utils
                 return;
             }
             
-            // Grab online players to display announcements.
             List<MyPlayer> _onlineUsers = new List<MyPlayer>();
-            if(Instance.WorldOnline)
-                _onlineUsers = Sync.Players.GetOnlinePlayers().ToList();
-            
             Dictionary<ulong, MyPlayer> OnlinePlayers = new Dictionary<ulong, MyPlayer>();
-            foreach (MyPlayer onlineUser in _onlineUsers)
-                OnlinePlayers.Add(onlineUser.Id.SteamId, onlineUser);
             
-            
+            if (Instance.WorldOnline)
+            {
+                // Grab online players to display announcements.
+                if(Instance.WorldOnline)
+                    _onlineUsers = Sync.Players.GetOnlinePlayers().ToList();
+
+                foreach (MyPlayer onlineUser in _onlineUsers)
+                {
+                    // This shouldn't be needed as the player list is reset on every run, but for somebody it seems to throw because of duplicate keys.
+                    if (!OnlinePlayers.ContainsKey(onlineUser.Id.SteamId))
+                        OnlinePlayers.Add(onlineUser.Id.SteamId, onlineUser);  
+                }
+            }
+
             // Report rewards issued!
             StringBuilder payoutReport = new StringBuilder();
             payoutReport.AppendLine("*   Payout Report   *");

@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Windows;
+using System.Windows.Threading;
 using Torch.Commands;
 using Torch.Commands.Permissions;
 using RewardBot.Settings;
@@ -51,7 +53,10 @@ namespace RewardBot.Commands
                     IngameSteamId = Context.Player.SteamUserId,
                     Registered = DateTime.Now
                 };
-                Plugin.Config.RegisteredUsers.Add(user);
+
+                // Because this wasn't an error until it was lol...
+                MainBot.UiDispatcher.InvokeAsync(() => { Plugin.Config.RegisteredUsers.Add(user); }); 
+
                 Plugin.Config.LinkRequests.Remove(request);
                 await Plugin.Save();
                 
@@ -88,7 +93,7 @@ namespace RewardBot.Commands
 
             if (foundId)
             {
-                Plugin.Config.RegisteredUsers.Remove(foundUser);
+                MainBot.UiDispatcher.InvokeAsync(() => { Plugin.Config.RegisteredUsers.Remove(foundUser); });
                 Context.Respond($"Your SteamId is no longer linked to your Discord.  You are no longer able to receive any rewards that require this connection.");
                 await Plugin.Save();
             }
@@ -115,7 +120,7 @@ namespace RewardBot.Commands
                 Payout payout = Plugin.Config.Payouts[claimIndex];
                 count++;
                 await MainBot.CommandsManager.Run(payout.Command);
-                await Plugin.Control.Dispatcher.BeginInvoke((Action) (() => { Plugin.Config.Payouts.Remove(payout); }));
+                MainBot.UiDispatcher.InvokeAsync(() => { Plugin.Config.Payouts.Remove(payout); });
             }
 
             Context.Respond(count == 0 ? "You have no rewards available to claim at this time." : $"{count} reward(s) have been issued.");
@@ -141,7 +146,7 @@ namespace RewardBot.Commands
                 if (payout.ID != payoutID) continue;
                 
                 await MainBot.CommandsManager.Run(payout.Command);
-                await Plugin.Control.Dispatcher.BeginInvoke((Action) (() => { Plugin.Config.Payouts.Remove(payout); })); 
+                MainBot.UiDispatcher.InvokeAsync(() => { Plugin.Config.Payouts.Remove(payout); }); 
                 payoutIssued = true;
                 break;
             }

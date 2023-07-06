@@ -1,11 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
-using Discord;
+using System.Windows;
 using Discord.WebSocket;
 using RewardBot.Settings;
-using Sandbox.Common.ObjectBuilders.Definitions;
 using static RewardBot.MainBot;
 
 namespace RewardBot.DiscordBot.BOT_SlashCommands
@@ -36,6 +34,14 @@ namespace RewardBot.DiscordBot.BOT_SlashCommands
         
         private static async Task RewardsLink(SocketSlashCommand command)
         {
+            // Check if already registered
+            for (int index = Instance.Config.RegisteredUsers.Count - 1; index >= 0; index--)
+            {
+                if (Instance.Config.RegisteredUsers[index].DiscordId != command.User.Id) continue;
+                await command.RespondAsync($"You are already registered.");
+                return;
+            }
+            
             bool repeatCode = false;
             bool endLoop = false;
             string code = string.Empty;
@@ -43,7 +49,7 @@ namespace RewardBot.DiscordBot.BOT_SlashCommands
             while (!endLoop)
             {
                 Random generator = new Random(Guid.NewGuid().GetHashCode()); // Yeah.. this amuses me too :)
-                code = generator.Next(100000,999999).ToString("D6");
+                code = generator.Next(1000,9999).ToString("D6");
             
                 // Doubtful but check if code already used.
                 for (int index = Instance.Config.LinkRequests.Count - 1; index >= 0; index--)
@@ -57,14 +63,6 @@ namespace RewardBot.DiscordBot.BOT_SlashCommands
                     endLoop = true;
             }
             
-            // Check if already registered
-            for (int index = Instance.Config.RegisteredUsers.Count - 1; index >= 0; index--)
-            {
-                if (Instance.Config.RegisteredUsers[index].DiscordId != command.User.Id) continue;
-                await command.RespondAsync($"You are already registered.");
-                return;
-            }
-
             for (int index = Instance.Config.LinkRequests.Count - 1; index >= 0; index--)
             {
                 LinkRequest request = Instance.Config.LinkRequests[index];
@@ -73,7 +71,7 @@ namespace RewardBot.DiscordBot.BOT_SlashCommands
                 return;
             }
 
-            Instance.Config.LinkRequests.Add(new LinkRequest()
+            Instance.Config.LinkRequests.Add(new LinkRequest
             {
                 Created = DateTime.Now,
                 Code = code,
@@ -86,20 +84,37 @@ namespace RewardBot.DiscordBot.BOT_SlashCommands
             await command.RespondAsync($"Your link code is {code}. Go into the game and in type the following in chat -> !RewardBot Link {code}", ephemeral:true);
         }
 
-        private static async Task RewardsUnlink(SocketSlashCommand command)
+        private static Task RewardsUnlink(SocketSlashCommand command)
         {
-            for (int index = Instance.Config.RegisteredUsers.Count - 1; index >= 0; index--)
-            {
-                if (Instance.Config.RegisteredUsers[index].DiscordId == command.User.Id)
-                {
-                    Instance.Config.RegisteredUsers.RemoveAt(index);
-                    await Instance.Save();
-                    await command.RespondAsync("Your information has been removed.");
-                    return;
-                }
-            }
+            var tcs = new TaskCompletionSource<object>();
 
-            await command.RespondAsync("Unable to locate any information linked to your Discord account.", ephemeral: true);
+            UiDispatcher.InvokeAsync(async () =>
+            {
+                try
+                {
+                    for (int index = Instance.Config.RegisteredUsers.Count - 1; index >= 0; index--)
+                    {
+                        if (Instance.Config.RegisteredUsers[index].DiscordId == command.User.Id)
+                        {
+                            Instance.Config.RegisteredUsers.RemoveAt(index);
+                            await Instance.Save();
+                            await command.RespondAsync("Your information has been removed.");
+                            tcs.SetResult(null);
+                            return;
+                        }
+                    }
+
+                    await command.RespondAsync("Unable to locate any information linked to your Discord account.", ephemeral: true);
+                    tcs.SetResult(null);
+                }
+                catch (Exception ex)
+                {
+                    await Log.Error($"Unable to unlink user {command.User.Username} -> {ex.Message}");
+                    tcs.SetException(ex);
+                }
+            });
+
+            return tcs.Task;
         }
 
         private static async Task RewardsList(SocketSlashCommand command)
@@ -138,7 +153,4 @@ namespace RewardBot.DiscordBot.BOT_SlashCommands
             }
         }
     }
-    
-    
-    
 }

@@ -2,15 +2,18 @@
 using Discord;
 using Discord.WebSocket;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+using System.Timers;
+using System.Windows;
 using System.Windows.Data;
 using RewardBot.DiscordBot.BOT_SlashCommands;
 using RewardBot.DiscordBot.Utils;
 using RewardBot.Settings;
 using static RewardBot.MainBot;
 using AsynchronousObservableConcurrentList;
-using Discord.Interactions;
 using Helper = RewardBot.DiscordBot.Utils.Helper;
 
 namespace RewardBot.DiscordBot
@@ -41,6 +44,7 @@ namespace RewardBot.DiscordBot
                                  | GatewayIntents.GuildMembers
                                  | GatewayIntents.GuildBans
             };
+            config.MaxWaitBetweenGuildAvailablesBeforeReady = 30000;
             Client = new DiscordSocketClient(config);
             Client.Log += Logging;
             Client.Connected += _client_Connected; 
@@ -60,8 +64,12 @@ namespace RewardBot.DiscordBot
             for (int index = Instance.DiscordMembers.Count - 1; index >= 0; index--)
             {
                 if (Instance.DiscordMembers[index].Id != oldUserData.Id) continue;
-                Instance.DiscordMembers.RemoveAt(index);
-                Instance.DiscordMembers.Add(newUserData);
+                Instance.Control.Dispatcher.BeginInvoke((Action)(() =>
+                {
+                    Instance.DiscordMembers.RemoveAt(index);
+                    Instance.DiscordMembers.Add(newUserData);
+                }));
+                
                 break;
             }
             return Task.CompletedTask;
@@ -187,6 +195,17 @@ namespace RewardBot.DiscordBot
         {
             try
             {
+                // Shitty API fires this event before its ready so... we make the fucker wait!!
+                Stopwatch maxWait = new Stopwatch();
+                maxWait.Start();
+                while (maxWait.ElapsedMilliseconds < 5000 )
+                {
+                    Thread.Sleep(100);
+                }
+                maxWait.Stop();
+
+                await Log.Info("Roles Downloaded");
+                
                 IReadOnlyCollection<SocketRole> roles = Guild.Roles;
             
                 await Instance.Control.Dispatcher.BeginInvoke((Action)(()=> {Roles.AddRange(roles);}));
@@ -212,7 +231,7 @@ namespace RewardBot.DiscordBot
                 for (int index = 0; index < Instance.Config.RegisteredUsers.Count; index++)
                 {
                     if (Instance.Config.RegisteredUsers[index].DiscordId == bannedUser.Id)
-                        Instance.Config.RegisteredUsers.RemoveAt(index);
+                        Application.Current.Dispatcher.BeginInvoke(new Action (() => {Instance.Config.RegisteredUsers.RemoveAt(index); }));
                 }
             }
             
