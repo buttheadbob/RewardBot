@@ -125,17 +125,15 @@ namespace RewardBot.Utils
 
             // Report rewards issued!
             StringBuilder payoutReport = new StringBuilder();
-            payoutReport.AppendLine("*   Payout Report   *");
-            
+
             if (!payAll)
             {
-                await MainBot.Log.Info("Processing Rewards.");
                 for (int userIndex = Instance.Config.RegisteredUsers.Count - 1; userIndex >= 0; userIndex--)
                 {
                     RegisteredUsers registeredUser = Instance.Config.RegisteredUsers[userIndex];
 
                     // see if member already received scheduled payout for today
-                    if (registeredUser.LastPayout.DayOfYear == DateTime.Now.DayOfYear) continue;
+                    if (registeredUser.LastPayout.Day == DateTime.Now.Day) continue;
                     
                     SocketGuildUser member = MainBot.DiscordBot.Guild.GetUser(Instance.Config.RegisteredUsers[userIndex].DiscordId);
                     IReadOnlyCollection<SocketRole> memberRoles = member.Roles;
@@ -145,7 +143,19 @@ namespace RewardBot.Utils
                     for (int rewardIndex = Instance.Config.Rewards.Count - 1; rewardIndex >= 0; rewardIndex--)
                     {
                         Reward reward = Instance.Config.Rewards[rewardIndex];
-
+                        string[] rewardPayoutDays = reward.DaysToPay.Split(',');
+                        
+                        bool payhimhisdues = false;
+                        foreach (string intPayDays in rewardPayoutDays)
+                        {
+                            if (!int.TryParse(intPayDays, out int intPayDay)) continue;
+                            if (intPayDay != DateTime.Now.Day) continue;
+                            payhimhisdues = true;
+                            break;
+                        }
+                        
+                        if (!payhimhisdues) continue;
+                        
                         // Only pay users with the appropriate role...
                         foreach (SocketRole memberRole in memberRoles)
                         {
@@ -167,6 +177,7 @@ namespace RewardBot.Utils
                                 Command = finishCommand
                             };
 
+                            payoutReport.AppendLine("*   Payout Report   *");
                             payoutReport.AppendLine($"ID           -> {payTheMan.ID}");
                             payoutReport.AppendLine($"Reward Name  -> {payTheMan.RewardName}");
                             payoutReport.AppendLine($"Discord Name -> {payTheMan.DiscordName}");
@@ -178,15 +189,15 @@ namespace RewardBot.Utils
                             payoutReport.AppendLine("--------------------------------------------------");
 
                             rewardCounter++;
-                            Instance.Config.Payouts.Add(payTheMan);
+                            UiDispatcher.InvokeAsync(() => {Instance.Config.Payouts.Add(payTheMan); }); 
                             registerRewarded = true;
-                            break;
+                            continue;
                         }
                     }
 
                     if (!registerRewarded) continue;
-                    
-                    registeredUser.LastPayout = DateTime.Now;
+
+                    UiDispatcher.InvokeAsync(() => { registeredUser.LastPayout = DateTime.Now;} ); 
                     if (OnlinePlayers.ContainsKey(registeredUser.IngameSteamId))
                     {
                         // Announce to player in game.
@@ -208,8 +219,11 @@ namespace RewardBot.Utils
                     }
                 }
 
-                await Instance.Save();
-                await MainBot.Log.Info(payoutReport);
+                if (!string.IsNullOrEmpty(payoutReport.ToString()))
+                {
+                    await MainBot.Log.Info(payoutReport);
+                    await Instance.Save();
+                }
                 return;
             }
             
@@ -233,29 +247,37 @@ namespace RewardBot.Utils
                 return;
             }
             
-            for (int userIndex = Instance.Config.RegisteredUsers.Count - 1; userIndex >= 0; userIndex--)
+            if (!Instance.Config.IsBotOnline())
             {
-                if (!Instance.Config.IsBotOnline())
-                {
-                    await MainBot.Log.Warn("Unable to process rewards while the Discord bot is offline.");
-                    return;
-                }
-                RegisteredUsers registeredUser = Instance.Config.RegisteredUsers[userIndex];
-                if (registeredUser == null || registeredUser.DiscordId == 0) continue;
-                SocketGuildUser member = MainBot.DiscordBot.Guild.GetUser(registeredUser.DiscordId);
-                IReadOnlyCollection<SocketRole> memberRoles = member.Roles;
-                int rewardCounter = 0;
+                await MainBot.Log.Warn("Unable to process rewards while the Discord bot is offline.");
+                return;
+            }
 
-                for (int rewardIndex = Instance.Config.Rewards.Count - 1; rewardIndex >= 0; rewardIndex--)
+            try
+            {
+                // Get Selected Reward
+                Reward selectedReward = null;
+                foreach (Reward reward in Instance.Config.Rewards)
                 {
-                    Reward reward = Instance.Config.Rewards[rewardIndex];
-                    
+                    if (reward.ID != rewardID) continue;
+                    selectedReward = reward;
+                    break;
+                } 
+                
+                for (int userIndex = Instance.Config.RegisteredUsers.Count - 1; userIndex >= 0; userIndex--)
+                {
+                    RegisteredUsers registeredUser = Instance.Config.RegisteredUsers[userIndex];
+                    if (registeredUser == null || registeredUser.DiscordId == 0) continue;
+                    SocketGuildUser member = MainBot.DiscordBot.Guild.GetUser(registeredUser.DiscordId);
+                    IReadOnlyCollection<SocketRole> memberRoles = member.Roles;
+                    int rewardCounter = 0;
+
                     // Only pay users with the appropriate role...
                     foreach (SocketRole memberRole in memberRoles)
                     {
-                        if (memberRole.Name != reward.CommandRole) continue;
+                        if (memberRole.Name != selectedReward.CommandRole) continue;
                         // Payday!!
-                        string startCommand = reward.Command.Replace("{SteamID}", registeredUser.IngameSteamId.ToString());
+                        string startCommand = selectedReward.Command.Replace("{SteamID}", registeredUser.IngameSteamId.ToString());
                         string finishCommand = startCommand.Replace("{Username}", registeredUser.IngameName);
                         Payout payTheMan = new Payout
                         {
@@ -264,8 +286,8 @@ namespace RewardBot.Utils
                             DiscordName = member.Username,
                             IngameName = registeredUser.IngameName,
                             SteamID = registeredUser.IngameSteamId,
-                            ExpiryDate = DateTime.Now + TimeSpan.FromDays(reward.ExpiresInDays),
-                            RewardName = reward.Name,
+                            ExpiryDate = DateTime.Now + TimeSpan.FromDays(selectedReward.ExpiresInDays),
+                            RewardName = selectedReward.Name,
                             PaymentDate = DateTime.Now,
                             Command = finishCommand
                         };
@@ -283,29 +305,32 @@ namespace RewardBot.Utils
                         Instance.Config.Payouts.Add(payTheMan);
                         rewardCounter++;
                     }
-                }
-                if (rewardCounter == 0) continue;
-                
-                if (OnlinePlayers.ContainsKey(registeredUser.IngameSteamId))
-                {
-                    // Announce to player in game.
-                    ModCommunication.SendMessageTo(new DialogMessage($"Reward Bot", null, null, $"You have {rewardCounter} new reward(s) to claim", "Understood!"), registeredUser.IngameSteamId);
-                }
-                else
-                {
-                    if (!Instance.Config.IsBotOnline()) continue;
-                    // Announce to player on discord.
-                    IUser user = await MainBot.DiscordBot.Client.GetUserAsync(registeredUser.DiscordId);
-                    try
+                    
+                    if (rewardCounter == 0) continue;
+                    
+                    if (OnlinePlayers.ContainsKey(registeredUser.IngameSteamId))
                     {
-                        await user.SendMessageAsync($"You have {rewardCounter} new reward(s) to claim.");
+                        // Announce to player in game.
+                        ModCommunication.SendMessageTo(new DialogMessage($"Reward Bot", null, null, $"You have {rewardCounter} new reward(s) to claim", "Understood!"), registeredUser.IngameSteamId);
                     }
-                    catch (Exception e)
+                    else
                     {
-                        await MainBot.Log.Warn(e.ToString());
+                        if (!Instance.Config.IsBotOnline()) continue;
+                        // Announce to player on discord.
+                        IUser user = await MainBot.DiscordBot.Client.GetUserAsync(registeredUser.DiscordId);
+                        try
+                        {
+                            await user.SendMessageAsync($"You have {rewardCounter} new reward(s) to claim.");
+                        }
+                        catch (Exception e)
+                        {
+                            await MainBot.Log.Warn(e.ToString());
+                        }
                     }
                 }
-                
+            } catch (Exception e)
+            {
+                await MainBot.Log.Error(e.ToString());
             }
 
             await Instance.Save();

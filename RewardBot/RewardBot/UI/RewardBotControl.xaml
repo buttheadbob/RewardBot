@@ -128,9 +128,9 @@
                             
                             <Button Name="ForceBotOnline" Content="Force Bot Online" Margin="3" Click="ForceBotOnline_OnClick" />
                             <Button Name="ForceBotOffline" Content="Force Bot Offline" Margin="3" Click="ForceBotOffline_OnClick"/>
-                            <Button Name="ForceBoosterRewardPayoutUnpaid" Content="Force Boost Rewards Payout (Unpaid Members)" Margin="3" Click="ForceBoosterRewardPayout_OnClick" />
+                            <Button Name="ForceBoosterRewardPayoutUnpaid" Content="Force Role Rewards Payout (Unpaid Members)" Margin="3" Click="ForceBoosterRewardPayout_OnClick" />
                             <StackPanel Orientation="Horizontal" Width="Auto">
-                                <Button Name="ForceBoosterRewardPayoutAll" Content="Force Boost Rewards Payout (ALL Members)" Margin="3" Click="ForceBoosterRewardPayoutAll_OnClick" />
+                                <Button Name="ForceBoosterRewardPayoutAll" Content="Force Role Rewards Payout (ALL Members)" Margin="3" Click="ForceBoosterRewardPayoutAll_OnClick" />
                                 <ComboBox Name="ForceSelectedPayoutToAll" Margin="0,2,0,2">
                                     <ComboBox.ItemTemplate>
                                         <DataTemplate>

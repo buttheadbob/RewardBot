@@ -418,6 +418,8 @@ namespace RewardBot.UI
             if (lastSelectedItem == -1) return;
             Payout payout = (Payout) PayoutList.Items.GetItemAt(lastSelectedItem);
             if (payout == null) return;
+            if (payout.DiscordId == 0) return;
+            
             StringBuilder logDeletePayout = new StringBuilder();
             logDeletePayout.AppendLine("Player Reward Manually Deleted:");
             logDeletePayout.AppendLine($"In-Game Name -> {payout.IngameName}");
@@ -428,7 +430,7 @@ namespace RewardBot.UI
             logDeletePayout.AppendLine($"Expires      -> ({payout.DaysUntilExpired.ToString()} days)  {Instance.Config.Payouts[PayoutList.SelectedIndex].ExpiryDate}");
 
             await Log.Warn(logDeletePayout);
-            UiDispatcher.InvokeAsync(() => { Instance.Config.Payouts.Remove(payout); }); 
+            await UiDispatcher.InvokeAsync(() =>  {Instance.Config.Payouts.Remove(payout); }); 
             await Instance.Save();
         }
 

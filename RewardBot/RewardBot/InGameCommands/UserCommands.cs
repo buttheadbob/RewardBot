@@ -7,6 +7,7 @@ using Torch.Commands;
 using Torch.Commands.Permissions;
 using RewardBot.Settings;
 using VRage.Game.ModAPI;
+using static RewardBot.MainBot;
 
 namespace RewardBot.Commands
 {
@@ -55,7 +56,7 @@ namespace RewardBot.Commands
                 };
 
                 // Because this wasn't an error until it was lol...
-                MainBot.UiDispatcher.InvokeAsync(() => { Plugin.Config.RegisteredUsers.Add(user); }); 
+                UiDispatcher.InvokeAsync(() => { Plugin.Config.RegisteredUsers.Add(user); }); 
 
                 Plugin.Config.LinkRequests.Remove(request);
                 await Plugin.Save();
@@ -93,7 +94,7 @@ namespace RewardBot.Commands
 
             if (foundId)
             {
-                MainBot.UiDispatcher.InvokeAsync(() => { Plugin.Config.RegisteredUsers.Remove(foundUser); });
+                UiDispatcher.InvokeAsync(() => { Plugin.Config.RegisteredUsers.Remove(foundUser); });
                 Context.Respond($"Your SteamId is no longer linked to your Discord.  You are no longer able to receive any rewards that require this connection.");
                 await Plugin.Save();
             }
@@ -119,8 +120,8 @@ namespace RewardBot.Commands
                 if (Plugin.Config.Payouts[claimIndex].SteamID != Context.Player.SteamUserId) continue;
                 Payout payout = Plugin.Config.Payouts[claimIndex];
                 count++;
-                await MainBot.CommandsManager.Run(payout.Command);
-                MainBot.UiDispatcher.InvokeAsync(() => { Plugin.Config.Payouts.Remove(payout); });
+                await CommandsManager.Run(payout.Command);
+                UiDispatcher.InvokeAsync(() => { Plugin.Config.Payouts.Remove(payout); });
             }
 
             Context.Respond(count == 0 ? "You have no rewards available to claim at this time." : $"{count} reward(s) have been issued.");
@@ -145,8 +146,8 @@ namespace RewardBot.Commands
                 if (payout.SteamID != Context.Player.SteamUserId) continue;
                 if (payout.ID != payoutID) continue;
                 
-                await MainBot.CommandsManager.Run(payout.Command);
-                MainBot.UiDispatcher.InvokeAsync(() => { Plugin.Config.Payouts.Remove(payout); }); 
+                await CommandsManager.Run(payout.Command);
+                UiDispatcher.InvokeAsync(() => { Plugin.Config.Payouts.Remove(payout); }); 
                 payoutIssued = true;
                 break;
             }

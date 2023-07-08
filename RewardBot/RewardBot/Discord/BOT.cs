@@ -100,6 +100,18 @@ namespace RewardBot.DiscordBot
 
         private async Task ClientOnDisconnected(Exception arg)
         {
+            if (arg is GatewayReconnectException)
+            {
+                _ = Task.Run( async () =>
+                {
+                    await Log.Error("Discord requested a reconnect, possibly dut to bot inactivity.  Reconnecting in 1 minute...");
+                    Thread.Sleep(60000);
+                    await MainBot.DiscordBot.Connect();
+                });
+                
+                return;
+            }
+            
             await Client.SetStatusAsync(UserStatus.DoNotDisturb);
             Instance.Config.SetBotStatus(BotStatusEnum.Disconnecting);
             await Client.LogoutAsync();
@@ -168,6 +180,7 @@ namespace RewardBot.DiscordBot
                 Client.UserLeft += _client_UserLeft;
                 Client.UserBanned += ClientOnUserBanned;
                 Client.SlashCommandExecuted += CommandRan.ClientOnSlashCommandExecuted;
+                Client.Disconnected += ClientOnDisconnected;
                 switch (Instance.WorldOnline)
                 {
                     case true:
