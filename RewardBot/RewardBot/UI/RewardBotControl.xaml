@@ -163,7 +163,7 @@
                                 </StackPanel>
                                 <StackPanel Orientation="Horizontal">
                                     <Label Content="Days until expired:"/>
-                                    <TextBox Name="Expires" ToolTip="Days until reward expires. This is optional." Width="221" Margin="0,2,0,2" />
+                                    <TextBox Name="Expires" ToolTip="Days until reward expires. Default is set to 10,000 years." Width="221" Margin="0,2,0,2" Text="365242"/>
                                 </StackPanel>
                                 <StackPanel Orientation="Horizontal">
                                     <Label Content="PayDay(s):"/>
